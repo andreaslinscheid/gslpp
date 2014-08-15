@@ -1,0 +1,12 @@
+/**	\namespace gslpp::float_comparison
+ *	\brief Contains functions to measure floating point numbers.
+ *
+ *	This namespace contains methods to compare floating point numbers if they are sufficiently close.
+ *	This difference is summarized as "significant digits" where the digits refere to either the internal
+ *	binary representation or the related decimal representation.
+ *	Also, this namespace contains bit pattern checks to find for example a NaN or INF. 
+ *	This is to allow the compiler to optimize beyond IEEE floating point arithmetics
+ *	so that e.g. a!=a does not detect a NaN in general.
+ *
+ *	\todo So far the template argument must be double. Make this available to float and the related complex.
+ */

@@ -1,0 +1,7 @@
+/**	\namespace gslpp The namespace of the GSL++.
+ *	\brief All entities of the GSL++ are defined in the gslpp namespace
+ */
+/**	\mainpage The Generic Scientific Library for C++.
+ *	The aim of this project is to provide generic tools to solve basic numerical problems that take advantage of
+ *	the C++ template in order to allow compiler optimimzations in final user code.
+ */
