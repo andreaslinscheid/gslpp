@@ -23,7 +23,7 @@ void Error::call_error_with_code_ref(int line,
 	std::cout << "\tProblem description : " <<description << std::endl;
 
 	//If we are using debugging symbols generate a stack trace
-#ifndef __NDEBUG
+#ifndef DEBUG_BUILD
 	handler(errorCode);
 #endif
 	std::exit(errorCode);
@@ -33,7 +33,7 @@ void Error::call_error_no_ref(std::string const& description,int errorCode){
 	std::cout << "\tProblem description : " <<description << std::endl;
 
 	//If we are using debugging symbols generate a stack trace
-#ifdef __DEBUG
+#ifdef DEBUG_BUILD
 	handler(errorCode);
 #endif
 	std::exit(errorCode);

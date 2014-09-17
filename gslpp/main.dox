@@ -4,4 +4,9 @@
 /**	\mainpage The Generic Scientific Library for C++.
  *	The aim of this project is to provide generic tools to solve basic numerical problems that take advantage of
  *	the C++ template in order to allow compiler optimimzations in final user code.
+ *	Most of the code is template based. The library is designed to work with the template substitutions
+ *		float, double, std::complex<float>, std::complex<double>
+ *	An exception are the data interpolation routines. These are obviously higher dimensional for complex values.
+ *	Thus complex interpolation in N-D uses base type interpolation in 2N-D for the real and imaginary parts, respectively.
+ *	
  */

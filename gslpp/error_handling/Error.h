@@ -10,13 +10,15 @@
 
 #include <string>
 #include <typeinfo>
+#include <sstream>
+#include <iostream>
 
 namespace gslpp {
 namespace error_handling {
 
 /**
  * Quit the execution with an error message and possibly debug info.
- * If __NDEBUG is not defined this will cause to generate a stacktrace.
+ * If DEBUG_BUILD is defined this will cause to generate a stacktrace.
  */
 class Error {
 public:
@@ -58,6 +60,31 @@ private:
 
 	//call error with no reference to where the error occurred.
 	void call_error_no_ref(std::string const& description,int errorCode);
+};
+
+/**	Generates a Warning that does not interrupt normal execution
+ *
+ */
+class Warning {
+public:
+	Warning() : _buffer(), _sstrBuff(_buffer) {};
+	~Warning() {
+		if ( _sstrBuff.str().empty() )
+			return;
+		std::cerr << "WARNING : " <<  _sstrBuff.str() << std::endl;
+	}
+
+	Warning(std::string const& message){
+		(*this) << message;
+	}
+	template<typename T>
+	Warning& operator<< (T const& message) {
+		 _sstrBuff << message;
+		return *this;
+	}
+private:
+	std::string _buffer;
+	std::stringstream _sstrBuff;;
 };
 
 }; /* namespace error_handling */

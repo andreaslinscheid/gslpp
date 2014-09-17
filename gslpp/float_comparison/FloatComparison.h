@@ -12,6 +12,8 @@ namespace gslpp{
 namespace float_comparison{
 
 /** Compare two float number if they do not differ more than significantDigits binary digits.
+ *
+ * 	Complex floats compare according to their real and imaginary parts.
  *	Comparison done according to
  *	http://randomascii.wordpress.com/2012/01/23/stupid-float-tricks-2/
  * @param a a floating point number (T = float, double, complex<float>, complex<double>)
@@ -25,7 +27,7 @@ namespace float_comparison{
 template<typename T>
 bool equal_up_to_significant_digits_binary(T a, T b, int significantDigits);
 
-/** Compare two float number if they do not differ more than significantDigits decimal digits.
+/** Compare two float numbers if they do not differ more than significantDigits decimal digits.
  *
  * 	significantDigits is cast into the significant digits in base 2, rounding up.
  *  Thus, it may behave a little more strict than expected.
@@ -35,17 +37,20 @@ bool equal_up_to_significant_digits_binary(T a, T b, int significantDigits);
 template<typename T>
 bool equal_up_to_significant_digits_decimal(T a, T b, int significantDigits);
 
-/** Check two doubles a and b for equality with
+/** Check a and b for equality or both values below threshold.
+ *
+ * comparison according to
  * 	gslpp::float_comparison::equal_up_to_significant_digits_decimal(T a, T b, int significantDigits)
- * 	 or if both are below threshold.
+ * 	 or if both are below threshold. For complex, real and imag parts are compared with real and imag
+ * 	 parts of threshold
  */
 template<typename T>
 bool equal_up_to_significant_digits_decimal_above_threshold(
 		T a, T b, int significantDigits, T threshold);
 
-/**	Check a float number if it is NaN.
+/**	Check a float number if it is NaN. A complex number is NaN if real or imaginary part is NaN.
  *
- * @param a A float or double number.
+ * @param a A number.
  * @return true if the bit pattern matches NaN, false else.
  */
 template<typename T>
