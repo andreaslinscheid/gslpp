@@ -10,102 +10,11 @@
 
 #include <vector>
 #include <set>
+#include <cstddef>
+#include "gslpp/data_interpolation/CubicPolynomial.h"
 
 namespace gslpp {
 namespace data_interpolation {
-/**	A cubic polynomial.
- *
- * 	The formula is according to Wikipedia [http://en.wikipedia.org/wiki/Spline_interpolation].
- * 	The template parameter T is supposed to be float or double.
- * 	The right (larger) border is not part of the range of definition.
- * 	A polynomial obeys a comparison hirachie. We say one cubic polynomial is smaller than the other
- * 	if the largest value is smaller than smallest value of the respective other polynomial.
- */
-template<typename T>
-class CubicPolynomial {
-public:
-	/** Constructor that sets the polynomial.
-	 *
-	 * Internally it calls set_polynomial.
-	 */
-	CubicPolynomial(T x1,T x2,T y1,T y2,T k1,T k2);
-
-	/**	Initialize the Polynomial
-	 *
-	 * @param x1 The infinum of the range of definition.
-	 * @param x2 The suppremum of the range of definition.
-	 * @param y1 Data value at x1.
-	 * @param y2 Data value at x2.
-	 * @param k1 Derivative of data at x1.
-	 * @param k2 Derivative of data at x2.
-	 */
-	void set_polynomial(T x1,T x2,T y1,T y2,T k1,T k2);
-
-	/**	Evaluate the polynomial at x.
-	 *
-	 *  We allow evaluation outside the range of definition.
-	 * @param x The position where to evaluate the polynomial.
-	 * @return The value of the polynomial at x.
-	 */
-	T evaluate(T x) const;
-
-	/** Evaluate the derivative of the polynomial at x.
-	 *
-	 *  We allow evaluation outside the range of definition.
-	 * @param x The position where to evaluate the polynomial.
-	 * @return The value of the derivative of the polynomial at x.
-	 */
-	T evaluate_derivative(T x) const;
-
-	/** Evaluate the second derivative of the polynomial at x.
-	 *
-	 *  We allow evaluation outside the range of definition.
-	 * @param x The position where to evaluate the polynomial.
-	 * @return The value of the second derivative of the polynomial at x.
-	 */
-	T evaluate_second_derivative(T x) const;
-
-	/** Evaluate at position x.
-	 *
-	 * Calls gslpp::data_interpolation::CubicPolynomial<T>::evaluate(T x) internally
-	 */
-	T operator() (T x) const {return this->evaluate(x);};
-
-	/** Get the infinium of the range of definition
-	 *
-	 * @return Infinum of the range of definition
-	 */
-	double min() const {return _x1;};
-
-	/** Get the suppremum of the range of definition
-	 *
-	 * @return Suppremum of the range of definition
-	 */
-	double max() const {return _x2;};
-
-	/** Checks if x is in the range of definition.
-	 *
-	 * @param x The position.
-	 * @return True if x is in the range of definition, else false.
-	 */
-	bool x_is_in_range(T x) const { return x>=_x1 and x<_x2;};
-
-	/** Check if the polynomial is below the position x.
-	 *
-	 * @param x The position.
-	 * @return True if x is larger or equal than the suppremum of the range of definition
-	 */
-	bool operator< (T x) const {return x >= _x2;};
-
-	/** Check if the polynomial is above the position x.
-	 *
-	 * @param x The position.
-	 * @return True if x is smaller than the infinum of the range of definition.
-	 */
-	bool operator> (T x) const {return x < _x1;};
-private:
-	T _x1,_x2,_y1,_y2,_a,_b;
-};
 
 /**	A cubic spline that interpolates data.
  *
@@ -114,13 +23,78 @@ private:
 template<typename T>
 class CubeSpline {
 public:
-	CubeSpline<T>::CubeSpline();
+	/**	Empty constructor calls just gslpp::data_interpolation::CubeSpline.clear().
+	 */
+	CubeSpline();
+
+	/**	Constructor that call  gslpp::data_interpolation::CubeSpline.initialize().
+	 * @param data
+	 * @param mesh
+	 */
+	CubeSpline(std::vector<T> const& data, std::vector<T> const& mesh);
+
+	/** Evaluate the spine at position x.
+	 *
+	 * @param x The position.
+	 * @param value The value of the polynomial at x.
+	 */
+	void evaluate(T x, T &value) const;
+
+	/** Evaluate the spine at position x.
+	 *
+	 * @param x The position.
+	 * @param value The value of the polynomial at x.
+	 * @param derivative The value of the derivative w.r.t. x of the polynomial at x.
+	 */
+	void evaluate(T x, T &value, T &derivative) const;
+
+	/** Evaluate the spine at position x.
+	 *
+	 * @param x The position.
+	 * @param value The value of the polynomial at x.
+	 * @param derivative The value of the derivative w.r.t. x of the polynomial at x.
+	 * @param second_derivative The value of the second derivative w.r.t. x of the polynomial at x.
+	 */
+	void evaluate(T x, T &value, T &derivative, T &second_derivative) const;
+
+	/**	Erase the content of the spline and set it to the initial state.
+	 */
+	void clear();
+
+	/**	Initialize the spline.
+	 *
+	 * @param data A vector with data values i at mesh point i respectively.
+	 * @param mesh A vector with position values i at mesh point i respectively.
+	 */
+	void initialize(std::vector<T> const& data, std::vector<T> const& mesh);
+
+	/** Evaluate the spine at position x.
+	 *
+	 * Calls gslpp::data_interpolation::CubeSpline<T>::evaluate(T x, T &value) internally.
+	 * @param x The position.
+	 * @return The value of the polynomial at x.
+	 */
+	T operator() (T x) const;
 private:
+
+	//store the grid values upon initialization
+	std::set<T> _gridValuesX;
+
+	//store the polynomials
+	std::vector< gslpp::data_interpolation::CubicPolynomial<T> > _polynomials;
+
+	//store interval that was last accessed for increased local evaluation performance
+	mutable size_t _lastAccessedPolynomIndex;
+
 	size_t _splineMatrixDim;
 	std::vector<T> _splineMatrix;
 	std::vector<T> _splineVector;
-	mutable size_t _lastAccessedPolynomIndex;
-	std::set<gslpp::data_interpolation::CubicPolynomial<T> > _interpolatingPolynomials;
+
+	size_t find_polynomial_in_range(T x) const;
+
+	void build_spline_matrix( std::vector<T> const& data, std::vector<T> const& mesh );
+
+	void find_derivatives_and_build_polynominals( std::vector<T> const& data, std::vector<T> const& mesh);
 };
 
 } /* namespace data_interpolation */
