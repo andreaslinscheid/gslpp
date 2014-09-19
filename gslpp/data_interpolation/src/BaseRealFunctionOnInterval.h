@@ -11,22 +11,27 @@
 namespace gslpp {
 namespace data_interpolation {
 
-/**	A base class for shared code of polynomials.
+/**	A base class for shared code of real valued functions on a real valued interval interval.
  *
+ * 	The right (larger) border is not part of the range of definition.
+ * 	A polynomial obeys a comparison hirachie. We say one cubic polynomial is smaller than the other
+ * 	if the largest value is smaller than smallest value of the respective other polynomial.
  */
 template<typename T,class derived>
-class BasePolynomial {
+class BaseRealFunctionOnInterval {
 public:
 	/**	Constructor setting the range of definition to NaN
 	 */
-	BasePolynomial();
+	BaseRealFunctionOnInterval();
 
 	/**	Constructor setting the range of definition to rangeMin and rangeMax.
+	 *
+	 *	Sets the internal init status to true.
 	 *
 	 * @param rangeMin
 	 * @param rangeMax
 	 */
-	BasePolynomial(T rangeMin, T rangeMax);
+	BaseRealFunctionOnInterval(T rangeMin, T rangeMax);
 
 	/** Evaluate at position x.
 	 *
@@ -38,13 +43,13 @@ public:
 	 *
 	 * @return Infinum of the range of definition
 	 */
-	T min() const;
+	T min_range() const;
 
 	/** Get the suppremum of the range of definition
 	 *
 	 * @return Suppremum of the range of definition
 	 */
-	T max() const;
+	T max_range() const;
 
 	/**	Get size of the interval.
 	 *
@@ -74,11 +79,18 @@ public:
 	bool operator> (T x) const;
 
 	/**	Set the infinum and suppremum range of definition to xMin and xMax.
-	 * Sets also _isInit to true.
+	 *
 	 * @param xMin
 	 * @param xMax
 	 */
 	void set_range_of_definition(T xMin, T xMax);
+
+	/**
+	 * Overwrites the internal initialization status.
+	 *
+	 * @param isInit The new status of the object.
+	 */
+	void set_init_state(bool isInit);
 
 	/** Check status of the object.
 	 *
@@ -94,5 +106,5 @@ private:
 } /* namespace data_interpolation */
 } /* namespace gslpp */
 
-#include "gslpp/data_interpolation/src/BasePolynomial.hpp"
+#include "gslpp/data_interpolation/src/BaseRealFunctionOnInterval.hpp"
 #endif /* GSLPP_DATA_INTERPOLATION_BASEPOLYNOMIAL_H_ */

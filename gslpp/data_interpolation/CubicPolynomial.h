@@ -5,7 +5,7 @@
  *      Author: alinsch
  */
 
-#include "gslpp/data_interpolation/src/BasePolynomial.h"
+#include "gslpp/data_interpolation/src/BaseRealFunctionOnInterval.h"
 
 #ifndef GSLPP_DATA_INTERPOLATION_CUBICPOLYNOMIAL_H_
 #define GSLPP_DATA_INTERPOLATION_CUBICPOLYNOMIAL_H_
@@ -22,7 +22,7 @@ namespace data_interpolation {
  * 	if the largest value is smaller than smallest value of the respective other polynomial.
  */
 template<typename T>
-class CubicPolynomial : public BasePolynomial<T , CubicPolynomial<T> > {
+class CubicPolynomial : public BaseRealFunctionOnInterval<T , CubicPolynomial<T> > {
 public:
 	/** Constructor that sets the polynomial.
 	 *

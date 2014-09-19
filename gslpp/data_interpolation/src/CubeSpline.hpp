@@ -4,33 +4,29 @@
  *  Created on: Jul 6, 2014
  *      Author: alinsch
  */
-#include <cmath>
-#include "gslpp/error_handling/Error.h"
-#include "gslpp/linear_algebra/LinearAlgebra.h"
+#include "gslpp/data_interpolation/CubeSpline.h"
 
 namespace gslpp {
 namespace data_interpolation {
 
-template<typename T>
-CubeSpline<T>::CubeSpline(){
-	this->clear();
+template<typename T, class Polynom>
+CubeSpline<T,Polynom>::CubeSpline() : BaseSpline<CubeSpline<T>,T,Polynom>(){
 }
 
-template<typename T>
-CubeSpline<T>::CubeSpline(std::vector<T> const& data, std::vector<T> const& mesh){
-	this->initialize(data,mesh);
+template<typename T, class Polynom>
+CubeSpline<T,Polynom>::CubeSpline(std::vector<T> const& data, std::vector<T> const& mesh)
+	: BaseSpline<CubeSpline<T>,T,Polynom>() {
 }
 
-template<typename T>
-void CubeSpline<T>::clear(){
+template<typename T, class Polynom>
+void CubeSpline<T,Polynom>::clear(){
 	_splineMatrix.clear();
-	_polynomials.clear();
 	_splineVector.clear();
-	_lastAccessedPolynomIndex = 0;
+	BaseSpline<CubeSpline<T>,T,Polynom>::clear();
 }
 
-template<typename T>
-void CubeSpline<T>::initialize(std::vector<T> const& data, std::vector<T> const& mesh){
+template<typename T, class Polynom>
+void CubeSpline<T,Polynom>::initialize(std::vector<T> const& mesh, std::vector<T> const& data){
 #ifdef DEBUG_BUILD
 	if ( ( data.size() != mesh.size() ) or ( mesh.size() == 0 ) ) {
 		gslpp::error_handling::Error( "Input data for spline generation is rubbish" ,
@@ -38,12 +34,14 @@ void CubeSpline<T>::initialize(std::vector<T> const& data, std::vector<T> const&
 	}
 #endif
 	this->clear();
+	this->set_range_of_definition(mesh.front(),mesh.back());
 	this->build_spline_matrix(data,mesh);
 	this->find_derivatives_and_build_polynominals(data,mesh);
+	this->set_init_state(true);
 }
 
-template<typename T>
-void CubeSpline<T>::build_spline_matrix( std::vector<T> const& data, std::vector<T> const& mesh ){
+template<typename T, class Polynom>
+void CubeSpline<T,Polynom>::build_spline_matrix( std::vector<T> const& data, std::vector<T> const& mesh ){
 #ifdef DEBUG_BUILD
 	if ( ( data.size() != mesh.size() ) or ( mesh.size() <= 1 ) ) {
 		gslpp::error_handling::Error( "Input data for spline matrix generation is rubbish" ,
@@ -52,13 +50,10 @@ void CubeSpline<T>::build_spline_matrix( std::vector<T> const& data, std::vector
 #endif
 
 	//insert the data into the internal mesh
-	for ( size_t i = 0 ; i < mesh.size() ; i++ ) {
-		_gridValuesX.insert(mesh[i]);
-	}
+	this->insert_grid(mesh);
 
 	using std::pow;
 	_splineMatrixDim = mesh.size();
-	_lastAccessedPolynomIndex = _splineMatrixDim/2;
 
 	//Create the spline matrix
 	_splineMatrix.assign(_splineMatrixDim*_splineMatrixDim,0.0);
@@ -93,8 +88,8 @@ void CubeSpline<T>::build_spline_matrix( std::vector<T> const& data, std::vector
 			/pow(mesh[_splineMatrixDim-1]-mesh[_splineMatrixDim-2],2);
 }
 
-template<typename T>
-void CubeSpline<T>::find_derivatives_and_build_polynominals(
+template<typename T, class Polynom>
+void CubeSpline<T,Polynom>::find_derivatives_and_build_polynominals(
 		std::vector<T> const& data, std::vector<T> const& mesh){
 #ifdef DEBUG_BUILD
 	if ( ( data.size() != mesh.size() ) or
@@ -113,58 +108,11 @@ void CubeSpline<T>::find_derivatives_and_build_polynominals(
 	for (size_t ipol=0;ipol< _splineMatrixDim - 1 ;ipol++){
 
 		// construct a polynomial and insert into the container
-		gslpp::data_interpolation::CubicPolynomial<T> cubicPolynom(mesh[ipol],mesh[ipol+1],data[ipol],data[ipol+1],
+		Polynom p(mesh[ipol],mesh[ipol+1],data[ipol],data[ipol+1],
 				vectorOfDerivatives[ipol],vectorOfDerivatives[ipol+1]);
-		_polynomials.push_back(cubicPolynom);
+		this->insert_polynom(p);
 	}
 }
-
-template<typename T>
-size_t CubeSpline<T>::find_polynomial_in_range(T x) const {
-	if ( _polynomials[_lastAccessedPolynomIndex].x_is_in_range(x) )
-		return _lastAccessedPolynomIndex;
-	//
-	//the polynomial index is the index of the point that is not smaller than x
-	//	we use <algorithm> lower_bound which gives the iterator to the first element that does not compare less.
-	//	The result is thus equivalent to the index of the upper point of the polynomial, except equality which is
-	//		used in a different convention and we have to account for this
-	typename std::set<T>::const_iterator ptrToLBoundX;
-	ptrToLBoundX = _gridValuesX.lower_bound(x);
-	int indexX = std::distance(_gridValuesX.begin(),ptrToLBoundX)-1;
-	if ( *ptrToLBoundX == x)
-		indexX += 1;
-	//
-	_lastAccessedPolynomIndex = static_cast<size_t>( indexX );
-	return _lastAccessedPolynomIndex;
-}
-
-template<typename T>
-void CubeSpline<T>::evaluate(T x, T &value) const {
-	_lastAccessedPolynomIndex =  this->find_polynomial_in_range(x);
-	 _polynomials[_lastAccessedPolynomIndex].evaluate(x,value);
-}
-
-template<typename T>
-void CubeSpline<T>::evaluate(T x, T &value, T &derivative) const {
-	this->evaluate(x,value);
-
-	//_lastAccessedPolynomIndex is now set to this->find_polynomial_in_range(x)
-	//	no need to call it again
-	 _polynomials[_lastAccessedPolynomIndex].evaluate_derivative(x,derivative);
-}
-
-template<typename T>
-void CubeSpline<T>::evaluate(T x, T &value, T &derivative,T &second_derivative) const {
-	this->evaluate(x,value,derivative);
-	 _polynomials[_lastAccessedPolynomIndex].evaluate_second_derivative(x,second_derivative);
-}
-
-template<typename T>
-T CubeSpline<T>::operator()(T x) const {
-	T value;
-	this->evaluate(x,value);
-	return value;
-};
 
 } /* namespace data_interpolation */
 } /* namespace gslpp */

@@ -5,6 +5,9 @@
  *      Author: alinsch
  */
 
+#include "gslpp/data_interpolation/src/BaseRealFunctionOnInterval.h"
+#include "gslpp/error_handling/Error.h"
+
 #ifndef GSLPP_DATA_INTERPOLATION_HERMITEPOLYNOMIAL_H_
 #define GSLPP_DATA_INTERPOLATION_HERMITEPOLYNOMIAL_H_
 
@@ -15,20 +18,17 @@ namespace data_interpolation{
  *
  * 	The formula is according to Wikipedia [http://en.wikipedia.org/wiki/Cubic_Hermite_spline].
  * 	The template parameter T is supposed to be float or double.
- * 	The right (larger) border is not part of the range of definition.
- * 	A polynomial obeys a comparison hirachie. We say one cubic polynomial is smaller than the other
- * 	if the largest value is smaller than smallest value of the respective other polynomial.
  */
 template<typename T>
-class HermitePolynomial : public BasePolynomial<T, HermitePolynomial<T> > {
+class HermitePolynomial : public BaseRealFunctionOnInterval<T, HermitePolynomial<T> > {
 public:
-	/** Empty constructor
+	/** Empty constructor. Sets the coefficients of the polynomial to NaN.
 	 */
 	HermitePolynomial();
 
 	/** Constructor that sets the polynomial.
 	 *
-	 * Internally it calls HermitePolynomial.initialize.
+	 * Internally calls HermitePolynomial.initialize.
 	 */
 	HermitePolynomial(T x1, T x2,T y1,T y2, T k1, T k2);
 
@@ -42,15 +42,30 @@ public:
 	 * @param k2 Derivative of data at x2.
 	 */
 	void initialize(T x1, T x2,T y1, T y2 ,T k1 ,T k2);
-	//
-	//evaluate the polynomial at x (input) in [xFirst,xLast)
-	void evaluate(T x, T &fOfX) const;
-	//
-	//evaluate the polynomial at t (input) in [xFirst,xLast) and its first derivative
-	void evaluate(T x, T &fOfX, T &dfOfX) const;
-	//
-	//evaluate the polynomial at t (input) in [xFirst,xLast) and its first and second derivative
-	void evaluate(T x, T &fOfX, T &dfOfX, T &ddfOfX) const;
+
+	/**	Evaluate the polynomial at x.
+	 *
+	 *  We allow evaluation outside the range of definition.
+	 * @param x The position where to evaluate the polynomial.
+	 * @param value The value of the polynomial at x.
+	 */
+	void evaluate(T x, T &value) const;
+
+	/** Evaluate the derivative of the polynomial at x.
+	 *
+	 *  We allow evaluation outside the range of definition.
+	 * @param x The position where to evaluate the polynomial.
+	 * @param value The value of the derivative of the polynomial at x.
+	 */
+	void evaluate_derivative(T x, T &value) const;
+
+	/** Evaluate the second derivative of the polynomial at x.
+	 *
+	 *  We allow evaluation outside the range of definition.
+	 * @param x The position where to evaluate the polynomial.
+	 * @param value The value of the second derivative of the polynomial at x.
+	 */
+	void evaluate_second_derivative(T x, T &value) const;
 private:
 
 	/** Store the coefficients of the Hermite basis

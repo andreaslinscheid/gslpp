@@ -44,11 +44,11 @@ std::string RunTest::nameOfTypeTrait<float> () const {
 }
 template<>
 double RunTest::accuracyGoal<double> () const {
-	return 1e-14;
+	return 1e-12;
 }
 template<>
 float RunTest::accuracyGoal<float> () const {
-	return 1e-6;
+	return 1e-5;
 }
 
 };/* namespace data_interpolation */

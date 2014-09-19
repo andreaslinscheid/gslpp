@@ -4,8 +4,6 @@
  *  Created on: Sep 7, 2014
  *      Author: alinsch
  */
-
-#include "gslpp/error_handling/Error.h"
 #include "gslpp/data_interpolation/HermitePolynomial.h"
 
 namespace gslpp{
@@ -13,47 +11,58 @@ namespace data_interpolation{
 
 template<typename T>
 void HermitePolynomial<T>::initialize(T x1,T x2,T y1,T y2,T k1,T k2){
+#ifdef DEBUG_BUILD
+	//simple check for some input error
+	if ( x1 > x2 )
+		gslpp::error_handling::Error("Problem in HermitePolynomial:"
+				"Interval negative",gslpp::error_handling::Error::INTERNAL_LOGIC_CHECK_FAILED);
+#endif
+	this->set_range_of_definition(x1,x2);
+
 	_coefficientFAtZero = y1;
 	_coefficientFAtOne = y2;
+	_coefficientdFAtZero = k1;
+	_coefficientdFAtOne = k2;
+
+	this->set_init_state(true);
 
 }
 
 template<typename T>
-HermitePolynomial<T>::HermitePolynomial(T coeffFAtZero, T coeffFAtOne,
-		T coeffDFAtZero,T coeffDFAtOne,
-		T xFirst, T xLast)
-	:	_coefficientFAtZero( coeffFAtZero ),_coefficientFAtOne(coeffFAtOne ),
-		_coefficientdFAtZero( coeffDFAtZero ),_coefficientdFAtOne( coeffDFAtOne ),
-		_xFirst( xFirst ),_xLast( xLast ){
-	//
-	_intervalLength = _xLast - _xFirst;
-	//
-	if ( _intervalLength < 1e-8 )
-		std::Error("Problem in HermitePolynomial: Interval size too small or negative",std::Error::INCORRECT_INIT);
+HermitePolynomial<T>::HermitePolynomial()
+	:	_coefficientFAtZero( std::numeric_limits<T>::quiet_NaN() ),
+	 	_coefficientFAtOne(std::numeric_limits<T>::quiet_NaN() ),
+	 	_coefficientdFAtZero( std::numeric_limits<T>::quiet_NaN() ),
+	 	_coefficientdFAtOne( std::numeric_limits<T>::quiet_NaN() ){
+	this->clear();
+}
+
+template<typename T>
+HermitePolynomial<T>::HermitePolynomial(T xFirst, T xLast,
+		T coeffFAtZero, T coeffFAtOne, T coeffDFAtZero,T coeffDFAtOne ){
+	this->initialize(xFirst,xLast,coeffFAtZero,coeffFAtOne,coeffDFAtZero,coeffDFAtOne);
 };
 
 template<typename T>
-void HermitePolynomial<T>::evaluate(T x, T &fOfX) const {
-	T t = (x - _xFirst) /  this->interval_length()l;
-	fOfX = _coefficientFAtZero * h00(t) + _coefficientdFAtZero * h10(t) * this->interval_length()
+void HermitePolynomial<T>::evaluate(T x, T &value) const {
+	T t = (x - this->min_range()) /  this->interval_length();
+	value = _coefficientFAtZero * h00(t) + _coefficientdFAtZero * h10(t) * this->interval_length()
 			+ _coefficientFAtOne * h01(t) + _coefficientdFAtOne * h11(t) *  this->interval_length();
 }
 
 template<typename T>
-void HermitePolynomial<T>::evaluate(T x, T &fOfX, T &dfOfX) const {
-	T t = (x - _xFirst) / _intervalLength;
-	this->evaluate(x,fOfX);
-	dfOfX = (_coefficientFAtZero * dh00(t) + _coefficientdFAtZero * dh10(t) * _intervalLength
-			+ _coefficientFAtOne * dh01(t) + _coefficientdFAtOne * dh11(t) * _intervalLength ) / _intervalLength;
+void HermitePolynomial<T>::evaluate_derivative(T x, T &value) const {
+	T t = (x - this->min_range()) / this->interval_length();
+	value = (_coefficientFAtZero * dh00(t) + _coefficientdFAtZero * dh10(t) * this->interval_length()
+			+ _coefficientFAtOne * dh01(t) + _coefficientdFAtOne * dh11(t) * this->interval_length() ) / this->interval_length();
 }
 
 template<typename T>
-void HermitePolynomial<T>::evaluate(T x, T &fOfX, T &dfOfX, T &ddfOfX) const {
-	T t = (x - _xFirst) / _intervalLength;
-	this->evaluate(x,fOfX,dfOfX);
-	ddfOfX = (_coefficientFAtZero * ddh00(t) + _coefficientdFAtZero * ddh10(t) * _intervalLength
-			+ _coefficientFAtOne * ddh01(t) + _coefficientdFAtOne * ddh11(t) * _intervalLength )
-			 / ( _intervalLength * _intervalLength);
+void HermitePolynomial<T>::evaluate_second_derivative(T x, T &value) const {
+	T t = (x - this->min_range()) / this->interval_length();
+	value = (_coefficientFAtZero * ddh00(t) + _coefficientdFAtZero * ddh10(t) * this->interval_length()
+			+ _coefficientFAtOne * ddh01(t) + _coefficientdFAtOne * ddh11(t) * this->interval_length() )
+			 / ( this->interval_length() * this->interval_length());
 }
 
 //
