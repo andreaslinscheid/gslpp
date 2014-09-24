@@ -9,6 +9,7 @@
 #include "gslpp/data_interpolation/CubeSpline.h"
 #include "gslpp/data_interpolation/HermitePolynomial.h"
 #include "gslpp/data_interpolation/MonotoneCubeHermiteSpline.h"
+#include "gslpp/data_interpolation/BiCubicInterpolation.h"
 
 namespace gslpp{
 namespace data_interpolation{
@@ -220,6 +221,34 @@ void RunTest::get_polynomial_test_data(std::vector<T> & xValues,
 	derivativePolynomialData.clear();
 	derivativePolynomialData.insert(derivativePolynomialData.end(),derivativeData,
 			derivativeData+sizeof(derivativeData)/sizeof(T));
+}
+
+template<typename T>
+void RunTest::test_CubeSpline2D(){
+
+	//define some test data
+	std::vector<T> dataSet;
+	std::vector<T> xValues;
+
+	std::vector<T> dataSet1;
+	std::vector<T> derivativeData1;
+	this->get_polynomial_test_data(xValues,dataSet1,derivativeData1);
+
+	std::vector<T> yValues;
+	static const T yValuesArray[] = {-1.0,0.0,1.0};
+	yValues.insert(yValues.end(),yValuesArray,yValuesArray+sizeof(yValuesArray)/sizeof(T));
+
+	// preallocate memory and insert identical data along the y axis.
+	dataSet.reserve( dataSet1.size()*yValues.size() );
+	for ( size_t i = 0 ; i < xValues.size(); i++ ){
+		for ( size_t j = 0 ; j < yValues.size(); j++ ){
+			dataSet.push_back(dataSet1[i]);
+		}
+	}
+
+	BiCubicInterpolation<T> cubeSpline2d;
+	cubeSpline2d.initialize(xValues,yValues,dataSet);
+
 }
 
 };/* namespace data_interpolation */

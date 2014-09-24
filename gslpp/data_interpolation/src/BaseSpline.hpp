@@ -70,6 +70,18 @@ void BaseSpline<derived,T,polynom>::evaluate(T x, T &value, T &derivative,T &sec
 }
 
 template<class derived, typename T,class polynom>
+void BaseSpline<derived,T,polynom>::evaluate_derivative(T x, T &derivative) const {
+	_lastAccessedPolynomIndex =  this->find_polynomial_in_range(x);
+	 _polynomials[_lastAccessedPolynomIndex].evaluate_derivative(x,derivative);
+}
+
+template<class derived, typename T,class polynom>
+void BaseSpline<derived,T,polynom>::evaluate_second_derivative(T x, T &second_derivative) const {
+	_lastAccessedPolynomIndex =  this->find_polynomial_in_range(x);
+	 _polynomials[_lastAccessedPolynomIndex].evaluate_second_derivative(x,second_derivative);
+}
+
+template<class derived, typename T,class polynom>
 void BaseSpline<derived,T,polynom>::insert_grid(std::vector<T> const& strictlyIncreasingGridX){
 #ifdef DEBUG_BUILD
 	//check if we have more than 1 point

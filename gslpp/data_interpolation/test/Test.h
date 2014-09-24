@@ -33,6 +33,9 @@ private:
 	void test_MonotoneCubeHermiteSpline();
 
 	template<typename T>
+	void test_CubeSpline2D();
+
+	template<typename T>
 	void get_polynomial_test_data(std::vector<T> & xValues,
 			std::vector<T> & polynomialData,
 			std::vector<T> & derivativePolynomialData ) const;

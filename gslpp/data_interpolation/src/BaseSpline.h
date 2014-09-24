@@ -60,6 +60,20 @@ public:
 	 */
 	void evaluate(T x, T &value, T &derivative, T &second_derivative) const;
 
+	/** Evaluate the derivative of the spine at position x.
+	 *
+	 * @param x The position.
+	 * @param derivative The value of the derivative w.r.t. x of the polynomial at x.
+	 */
+	void evaluate_derivative(T x, T &derivative) const;
+
+	/** Evaluate the second derivative of the spine at position x.
+	 *
+	 * @param x The position.
+	 * @param second_derivative The value of the second derivative w.r.t. x of the polynomial at x.
+	 */
+	void evaluate_second_derivative(T x, T &second_derivative) const;
+
 	/**	Erase the content of the spline and set it to the initial state.
 	 */
 	void clear();

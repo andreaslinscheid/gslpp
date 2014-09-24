@@ -30,6 +30,9 @@ void RunTest::run_test(){
 	test_MonotoneCubeHermiteSpline<double>();
 	test_MonotoneCubeHermiteSpline<float>();
 
+	test_CubeSpline2D<double>();
+	test_CubeSpline2D<float>();
+
 	std::cout << "Test of the data_interpolation namespace " <<
 			(_allSuccess ? "successfull!" : "not sucessfull!" ) << "\n\n" <<std::endl;
 }

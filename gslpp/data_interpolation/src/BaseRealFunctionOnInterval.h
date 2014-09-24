@@ -92,7 +92,8 @@ public:
 	 */
 	void set_init_state(bool isInit);
 
-	/** Check status of the object.
+	/**
+	 *  Check status of the object.
 	 *
 	 * @return True if the object is initialized.
 	 */
