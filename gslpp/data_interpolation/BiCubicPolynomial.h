@@ -77,16 +77,15 @@ public:
 	void evaluate_derivative(T x, T y, T &gradX, T &gradY) const ;
 
 	/**
-	 * Evaluate the derivative of the Polynomial.
+	 * Evaluate the second derivative, the Hessian matrix, of the Polynomial.
 	 *
 	 * @param x Position in x.
 	 * @param y Position in y.
 	 * @param Jxx xx-component of the Hessian-matrix.
 	 * @param Jxy xy-component of the Hessian-matrix.
-	 * @param Jyx yx-component of the Hessian-matrix.
 	 * @param Jyy yy-component of the Hessian-matrix.
 	 */
-	void evaluate_second_derivative(T x, T y, T &Jxx, T &Jxy, T &Jyx, T &Jyy) const ;
+	void evaluate_second_derivative(T x, T y, T &Jxx, T &Jxy, T &Jyy) const ;
 
 	/**
 	 * Check if a point is in the range of definition
@@ -100,22 +99,22 @@ public:
 	/**
 	 * @return the infinium of the range of definition in x
 	 */
-	T get_min_range_x() const;
+	T min_range_x() const;
 
 	/**
 	 * @return the infinium of the range of definition in y
 	 */
-	T get_min_range_y() const;
+	T min_range_y() const;
 
 	/**
 	 * @return the suppremum of the range of definition in x
 	 */
-	T get_max_range_x() const;
+	T max_range_x() const;
 
 	/**
 	 * @return the suppremum of the range of definition in y
 	 */
-	T get_max_range_y() const;
+	T max_range_y() const;
 
 	/**
 	 *  Check status of the object.

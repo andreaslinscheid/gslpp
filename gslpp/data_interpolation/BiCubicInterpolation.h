@@ -56,11 +56,28 @@ public:
 	/**
 	 * Evaluate the Interpolator at the Point \f$(x,y)\f$.
 	 *
-	 * @param x The x coordinate.
-	 * @param y The y coordinate.
-	 * @return Interpolated data at the Point \f$(x,y)\f$.
+	 * Calls BiCubicInterpolation.evaluate internally.
 	 */
 	T operator() (T x, T y) const;
+
+	/**
+	 * Evaluate the Interpolator at the Point \f$(x,y)\f$.
+	 *
+	 * @param x The x coordinate.
+	 * @param y The y coordinate.
+	 * @param dataInterpolation Interpolated data at the Point \f$(x,y)\f$.
+	 */
+	void evaluate(T x, T y, T &dataInterpolation) const;
+
+	/**
+	 * Evaluate the derivative of the Interpolator at the Point \f$(x,y)\f$.
+	 *
+	 * @param x The x coordinate.
+	 * @param y The y coordinate.
+	 * @param gradX Interpolated derivative w.r.t. x of the data at the Point \f$(x,y)\f$.
+	 * @param gradY Interpolated derivative w.r.t. y of the data at the Point \f$(x,y)\f$.
+	 */
+	void evaluate_derivative(T x, T y,T &gradX, T &gradY) const;
 
 	/**
 	 * Compute the BiCubic interpolator from input data.
@@ -84,6 +101,26 @@ public:
 			std::vector<T> const& yGridPointValues,
 			std::vector<T> const& data,
 			bool monotone = false);
+
+	/**
+	 * @return the infinium of the range of definition in x
+	 */
+	T min_range_x() const;
+
+	/**
+	 * @return the infinium of the range of definition in y
+	 */
+	T min_range_y() const;
+
+	/**
+	 * @return the suppremum of the range of definition in x
+	 */
+	T max_range_x() const;
+
+	/**
+	 * @return the suppremum of the range of definition in y
+	 */
+	T max_range_y() const;
 
 	/**
 	 * Get the range of definition.

@@ -31,6 +31,12 @@ BaseSpline<derived,T,polynom>::BaseSpline(std::vector<T> const& mesh,
 
 template<class derived, typename T,class polynom>
 size_t BaseSpline<derived,T,polynom>::find_polynomial_in_range(T x) const {
+#ifdef DEBUG_BUILD
+	if ( not this->x_is_in_range(x) ) {
+		gslpp::error_handling::Error( "Cannot find a polynomial in range for x that is out of range!" ,
+				gslpp::error_handling::Error::INTERNAL_LOGIC_CHECK_FAILED);
+	}
+#endif
 	if ( _polynomials[_lastAccessedPolynomIndex].x_is_in_range(x) )
 		return _lastAccessedPolynomIndex;
 	//
@@ -137,6 +143,23 @@ bool BaseSpline<derived,T,polynom>::is_init() const {
 	return ((not _gridValuesX.empty())
 			and  ( _gridValuesX.size() == (_polynomials.size()+1) )
 			and BaseRealFunctionOnInterval<T, BaseSpline<derived,T,polynom> >::is_init());
+}
+
+template<class derived, typename T,class polynom>
+std::vector<T> BaseSpline<derived,T,polynom>::deriviatives_at_underlying_grid_points() const {
+#ifdef DEBUG_BUILD
+	if ( not this->is_init() ){
+		gslpp::error_handling::Error("Spline is not init while trying to get the derivatives at grid points",
+				gslpp::error_handling::Error::ACCESS_WITHOUT_INIT);
+	}
+#endif
+	std::vector<T> result;
+	result.reserve(_polynomials.size() + 1);
+	for (size_t i = 0; i < _polynomials.size(); i++){
+		result.push_back(_polynomials[i].derivative_at_range_min());
+	}
+	result.push_back(_polynomials.back().derivative_at_range_max());
+	return result;
 }
 
 } /* namespace data_interpolation */

@@ -65,6 +65,15 @@ public:
 	 */
 	void evaluate_second_derivative(T x, T &value) const;
 
+	/**
+	 * @return The derivative of the data at range infinium.
+	 */
+	T derivative_at_range_min() const;
+
+	/**
+	 * @return The derivative of the data at range suppremum.
+	 */
+	T derivative_at_range_max() const;
 private:
 	T _y1; ///data value at _x1
 	T _y2; ///data value at _x2

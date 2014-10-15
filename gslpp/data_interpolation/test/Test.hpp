@@ -249,6 +249,85 @@ void RunTest::test_CubeSpline2D(){
 	BiCubicInterpolation<T> cubeSpline2d;
 	cubeSpline2d.initialize(xValues,yValues,dataSet);
 
+	CubeSpline<T,CubicPolynomial<T> > cubeSpline;
+	cubeSpline.initialize(xValues,dataSet1);
+
+	//compare the data along the x axis with the pure spline
+	// both interpolations will not be equal expect for the input data points
+	//	and the derivative at this points.
+	for ( size_t i = 0 ; i < xValues.size()-1 ; i++){
+
+		T x = xValues[i];
+		T y = -0.2423;
+
+		T diffValue = cubeSpline2d(x,y) - cubeSpline(x);
+		if ( std::fabs(diffValue) > accuracyGoal<T>() ) {
+			_allSuccess = false;
+			std::cout << "Test of "<< nameOfTypeTrait<T>() << " 2D data interpolator with cubic spline failed: "
+					"interpolating test data at step y = " << y << "\n";
+			std::cout << "\tData value from 1D spline: " << cubeSpline(x)
+					<<"; Data value from 2D interpolator (x = "<<  x <<"): "<< cubeSpline2d(x,y)
+					<<"; Difference: " <<  diffValue
+					<<"\n\tMismatch of 2D interpolator at this point with respect 1D spline which is supposed to be equal!\n";
+		}
+
+		T gradX,gradY;
+		cubeSpline2d.evaluate_derivative(x,y,gradX,gradY);
+		T diffDerivative,splineDerivative;
+		cubeSpline.evaluate_derivative(x,splineDerivative);
+		diffDerivative = gradX - splineDerivative;
+		if ( std::fabs(diffDerivative) > accuracyGoal<T>() ) {
+			_allSuccess = false;
+			std::cout << "Test of "<< nameOfTypeTrait<T>() << " 2D data interpolator with cubic spline failed: "
+					"interpolating test data at step y = " << y << "\n";
+			std::cout << "\tData derivative value from 1D spline: " << splineDerivative
+					<<"; Data derivative value from 2D interpolator (x = "<<  x <<"): "<< gradX
+					<<"; Difference: " <<  diffDerivative
+					<<"\n\tMismatch of 2D interpolator at this point with respect 1D spline which is supposed to be equal!\n";
+		}
+	}
+
+	//now do the same thing using the HermiteMonotoneSpline
+	BiCubicInterpolation<T> monotoneSpline2d;
+	monotoneSpline2d.initialize(xValues,yValues,dataSet,true);
+
+	MonotoneCubeHermiteSpline<T,CubicPolynomial<T> > monontoneSpline;
+	monontoneSpline.initialize(xValues,dataSet1);
+
+	//compare the data along the x axis with the pure spline
+	// both interpolations will not be equal expect for the input data points
+	//	and the derivative at this points.
+	for ( size_t i = 0 ; i < xValues.size()-1 ; i++){
+
+		T x = xValues[i];
+		T y = -0.2423;
+
+		T diffValue = monotoneSpline2d(x,y) - monontoneSpline(x);
+		if ( std::fabs(diffValue) > accuracyGoal<T>() ) {
+			_allSuccess = false;
+			std::cout << "Test of "<< nameOfTypeTrait<T>() << " 2D data interpolator with monotone spline failed: "
+					"interpolating test data at step y = " << y << "\n";
+			std::cout << "\tData value from 1D spline: " << monontoneSpline(x)
+					<<"; Data value from 2D interpolator (x = "<<  x <<"): "<< monotoneSpline2d(x,y)
+					<<"; Difference: " <<  diffValue
+					<<"\n\tMismatch of 2D interpolator at this point with respect 1D spline which is supposed to be equal!\n";
+		}
+
+		T gradX,gradY;
+		monotoneSpline2d.evaluate_derivative(x,y,gradX,gradY);
+		T diffDerivative,splineDerivative;
+		monontoneSpline.evaluate_derivative(x,splineDerivative);
+		diffDerivative = gradX - splineDerivative;
+		if ( std::fabs(diffDerivative) > accuracyGoal<T>() ) {
+			_allSuccess = false;
+			std::cout << "Test of "<< nameOfTypeTrait<T>() << " 2D data interpolator with monotone spline failed: "
+					"interpolating test data at step y = " << y << "\n";
+			std::cout << "\tData derivative value from 1D spline: " << splineDerivative
+					<<"; Data derivative value from 2D interpolator (x = "<<  x <<"): "<< gradX
+					<<"; Difference: " <<  diffDerivative
+					<<"\n\tMismatch of 2D interpolator at this point with respect 1D spline which is supposed to be equal!\n";
+		}
+	}
 }
 
 };/* namespace data_interpolation */

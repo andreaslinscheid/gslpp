@@ -45,5 +45,15 @@ void CubicPolynomial<T>::evaluate_second_derivative(T x, T &value) const {
 	value = 2*(_b-2*_a+(_a-_b)*3*t)/std::pow(this->interval_length(),2);
 }
 
+template<typename T>
+T CubicPolynomial<T>::derivative_at_range_min() const {
+	return (_y2-_y1+_a)/this->interval_length();
+}
+
+template<typename T>
+T CubicPolynomial<T>::derivative_at_range_max() const {
+	return (_y2-_y1-_b)/this->interval_length();
+}
+
 } /* namespace data_interpolation */
 } /* namespace gslpp */

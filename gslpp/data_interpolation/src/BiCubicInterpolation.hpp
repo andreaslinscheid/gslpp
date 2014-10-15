@@ -54,6 +54,12 @@ void BiCubicInterpolation<T>::initialize_t(std::vector<T> const& xGridPointValue
 		std::vector<T> const& yGridPointValues,
 		std::vector<T> const& data) {
 
+	const size_t numPtsX = xGridPointValues.size();
+	const size_t numPtsY = yGridPointValues.size();
+
+	//Ensure that we start from a clean state
+	this->clear();
+
 	//some input checks
 	if ( (xGridPointValues.size() < 2) or (yGridPointValues.size() < 2) )
 		gslpp::error_handling::Error("initialize with at least 2 points in each direction",
@@ -67,14 +73,14 @@ void BiCubicInterpolation<T>::initialize_t(std::vector<T> const& xGridPointValue
 	_gridValuesY.insert(yGridPointValues.begin(),yGridPointValues.end());
 #ifdef DEBUG_BUILD
 	typename std::set<T>::const_iterator it = _gridValuesX.begin();
-	for ( size_t i = 0 ; i < xGridPointValues.size() ; ++i){
+	for ( size_t i = 0 ; i <numPtsX ; ++i){
 		if ( *it != xGridPointValues[i] )
 			gslpp::error_handling::Error("Input grid in x not sorted",
 					gslpp::error_handling::Error::INTERNAL_LOGIC_CHECK_FAILED);
 		++it;
 	}
 	it = _gridValuesY.begin();
-	for ( size_t i = 0 ; i < yGridPointValues.size() ; ++i){
+	for ( size_t i = 0 ; i < numPtsY ; ++i){
 		if ( *it != yGridPointValues[i] )
 			gslpp::error_handling::Error("Input grid in y not sorted",
 					gslpp::error_handling::Error::INTERNAL_LOGIC_CHECK_FAILED);
@@ -82,90 +88,89 @@ void BiCubicInterpolation<T>::initialize_t(std::vector<T> const& xGridPointValue
 	}
 #endif
 
-	//Ensure that we start from a clean state
-	this->clear();
-
 	//temporary array with the x derivatives at the grid values. Has the same ordering as the data.
-	std::vector<T> xDerivatives(xGridPointValues.size()*yGridPointValues.size(),0.0);
+	std::vector<T> xDerivatives(xGridPointValues.size()*numPtsY,0.0);
 
 	//generate splines along the x direction
 	std::vector<T> sliceOfData(xGridPointValues.size(),0.0);
 
 	//for each y generate an interpolation along x and save the derivatives at the grid points.
-	for (size_t iy=0 ; iy < yGridPointValues.size() ; ++iy ){
+	for (size_t iy=0 ; iy < numPtsY ; iy++ ){
 
-		for ( size_t ix = 0 ; ix < xGridPointValues.size() ; ++ix)
-			sliceOfData[ix] = data[ix*yGridPointValues.size()+iy];
+		for ( size_t ix = 0 ; ix <numPtsX ; ix++)
+			sliceOfData[ix] = data[ix*numPtsY+iy];
 
 		PolynomialT xPolynomAtIY;
 		xPolynomAtIY.initialize(xGridPointValues,sliceOfData);
 
+		std::vector<T> tmp = xPolynomAtIY.deriviatives_at_underlying_grid_points();
+
 		//save the derivative values
-		for ( size_t ix = 0 ; ix < xGridPointValues.size() ; ++ix){
-			T dfYI_dx;
-			xPolynomAtIY.evaluate_derivative(xGridPointValues[ix],dfYI_dx);
-			xDerivatives[ix*yGridPointValues.size()+iy] = dfYI_dx;
+		for ( size_t ix = 0 ; ix <numPtsX ; ix++){
+			xDerivatives[ix*numPtsY+iy] = tmp[ix];
 		}
 	}
+	sliceOfData.clear();
 
 	//temporary array with the y derivatives at the grid values. Has the same ordering as the data.
-	std::vector<T> yDerivatives(xGridPointValues.size()*yGridPointValues.size(),0.0);
+	std::vector<T> yDerivatives(xGridPointValues.size()*numPtsY,0.0);
+
+	sliceOfData.assign(numPtsY,0.0);
 
 	//for each x generate an interpolation along y and save the derivatives at the grid points.
-	for (size_t ix=0 ; ix < xGridPointValues.size() ; ++ix ){
+	for (size_t ix=0 ; ix <numPtsX ; ix++ ){
 
-		for ( size_t iy = 0 ; iy < xGridPointValues.size() ; ++iy)
-			sliceOfData[iy] = data[ix*yGridPointValues.size()+iy];
+		for ( size_t iy = 0 ; iy <numPtsY ; iy++)
+			sliceOfData[iy] = data[ix*numPtsY+iy];
 
-		//use that data[ix*yGridPointValues.size()+0] is the starting point of the y data at this ix
+		//use that data[ix*numPtsY+0] is the starting point of the y data at this ix
 		PolynomialT ySplineAtIX;
-		ySplineAtIX.initialize(yGridPointValues, std::vector<T>(
-				 &data[ix*yGridPointValues.size()],
-				 &data[ix*yGridPointValues.size()]+yGridPointValues.size() ) ); //iterator range constructor
+		ySplineAtIX.initialize(yGridPointValues,sliceOfData);
 
-		for ( size_t iy = 0 ; iy < yGridPointValues.size() ; ++iy){
-			T dfXI_dy;
-			ySplineAtIX.evaluate_derivative(yGridPointValues[iy],dfXI_dy);
-			yDerivatives[ix*yGridPointValues.size()+iy] = dfXI_dy;
+		std::vector<T> tmp = ySplineAtIX.deriviatives_at_underlying_grid_points();
+
+		for ( size_t iy = 0 ; iy < numPtsY ; ++iy){
+			yDerivatives[ix*numPtsY+iy] = tmp[iy];
 		}
 	}
 
 	//temporary array with the x and y derivatives at the grid values. Has the same ordering as the data.
-	std::vector<T> xyDerivatives(xGridPointValues.size()*yGridPointValues.size(),0.0);
+	std::vector<T> xyDerivatives(xGridPointValues.size()*numPtsY,0.0);
 
 	//Interpolate of the derivative of x along the y direction
-	for (size_t ix=0 ; ix < xGridPointValues.size() ; ++ix ){
+	for (size_t ix=0 ; ix <numPtsX ; ++ix ){
+
+		//overwrites sliceOfData which has still the correct size
+		for ( size_t iy = 0 ; iy <numPtsY ; ++iy)
+			sliceOfData[iy] = xDerivatives[ix*numPtsY+iy];
 
 		PolynomialT yPolynomOfDFByDXAtIX;
-		yPolynomOfDFByDXAtIX.initialize(yGridPointValues, std::vector<T>(
-				&xDerivatives[ix*yGridPointValues.size()],
-				&xDerivatives[ix*yGridPointValues.size()]+yGridPointValues.size() ) ); //iterator range constructor
+		yPolynomOfDFByDXAtIX.initialize(yGridPointValues,sliceOfData);
 
-		for ( size_t iy = 0 ; iy < yGridPointValues.size() ; ++iy){
-			T d2fdxdy;
-			yPolynomOfDFByDXAtIX.evaluate_derivative(yGridPointValues[iy],d2fdxdy);
-			xyDerivatives[ix*yGridPointValues.size()+iy] = d2fdxdy;
+		std::vector<T> tmp = yPolynomOfDFByDXAtIX.deriviatives_at_underlying_grid_points();
+
+		for ( size_t iy = 0 ; iy < numPtsY ; ++iy){
+			xyDerivatives[ix*numPtsY+iy] = tmp[iy];
 		}
 	}
 
-	//we have yGridPointValues.size()*xGridPointValues.size() points
-	//	which makes (yGridPointValues.size()-1)*(xGridPointValues.size()-1) intervals
-	_interpolatingPolynomials.assign(
-			(yGridPointValues.size()-1)*(xGridPointValues.size()-1),
-			BiCubicPolynomial<T>() );
+	//we have numPtsY*xGridPointValues.size() points
+	//	which makes (numPtsY-1)*(xGridPointValues.size()-1) intervals
+	const size_t numIntervalsX =numPtsX-1;
+	const size_t numIntervalsY = numPtsY-1;
+	_interpolatingPolynomials.assign(numIntervalsX*numIntervalsY, BiCubicPolynomial<T>() );
 
-	//
 	T cond[16];
 	size_t pointIndices[4];
-	for ( size_t iIntervalX = 0 ; iIntervalX < (xGridPointValues.size()-1) ; ++iIntervalX ) {
-		for ( size_t iIntervalY = 0 ; iIntervalY < (yGridPointValues.size()-1) ; ++iIntervalY ) {
+	for ( size_t iIntervalX = 0 ; iIntervalX < numIntervalsX ; iIntervalX++ ) {
+		for ( size_t iIntervalY = 0 ; iIntervalY < numIntervalsY ; iIntervalY++ ) {
 
 			//set the point indices. We count 1: xmin,ymin 2: xmax,ymin 3: xmin,ymax 4: xmax,ymax
 			//	This has to be the same ordering as required by BiCubicPolynomial!
-			pointIndices[0] = iIntervalX*yGridPointValues.size() + iIntervalY;
-			pointIndices[1] = (iIntervalX+1)*yGridPointValues.size() + iIntervalY;
-			pointIndices[2] = iIntervalX*yGridPointValues.size() + (iIntervalY+1);
-			pointIndices[3] = (iIntervalX+1)*yGridPointValues.size() + (iIntervalY+1);
+			pointIndices[0] = iIntervalX*numPtsY + iIntervalY;
+			pointIndices[1] = (iIntervalX+1)*numPtsY + iIntervalY;
+			pointIndices[2] = iIntervalX*numPtsY + (iIntervalY+1);
+			pointIndices[3] = (iIntervalX+1)*numPtsY + (iIntervalY+1);
 
 			//set the polynomial condition values
 			for (size_t indexPT = 0 ; indexPT < 4 ; ++indexPT)
@@ -178,7 +183,7 @@ void BiCubicInterpolation<T>::initialize_t(std::vector<T> const& xGridPointValue
 				cond[indexPT+12] = xyDerivatives[pointIndices[indexPT]];
 
 			//compute the polynomial
-			_interpolatingPolynomials[iIntervalX*(yGridPointValues.size()-1) + iIntervalY].initialize(
+			_interpolatingPolynomials[iIntervalX*(numPtsY-1) + iIntervalY].initialize(
 			    		cond[ 0],cond[ 1],cond[ 2],cond[ 3], //data values
 			    		cond[ 4],cond[ 5],cond[ 6],cond[ 7], //derivatives along x
 			    		cond[ 8],cond[ 9],cond[10],cond[11], //derivatives along y
@@ -189,8 +194,8 @@ void BiCubicInterpolation<T>::initialize_t(std::vector<T> const& xGridPointValue
 		}
 	}
 
-	_numPolynomsX = xGridPointValues.size()-1;
-	_numPolynomsY = yGridPointValues.size()-1;
+	_numPolynomsX =numPtsX-1;
+	_numPolynomsY = numPtsY-1;
 	_minRangeX = *std::min_element(_gridValuesX.begin(),_gridValuesX.end());
 	_minRangeY = *std::min_element(_gridValuesY.begin(),_gridValuesY.end());
 	_maxRangeX = *std::max_element(_gridValuesX.begin(),_gridValuesX.end());
@@ -200,6 +205,11 @@ void BiCubicInterpolation<T>::initialize_t(std::vector<T> const& xGridPointValue
 
 template<typename T>
 size_t BiCubicInterpolation<T>::find_polynomial_in_range(T x, T y) const {
+
+	//first try the last polynomial if it is in range
+	if ( _interpolatingPolynomials[_xLastAccess*_numPolynomsY + _yLastAccess].is_in_range(x,y)){
+		return _xLastAccess*_numPolynomsY + _yLastAccess;
+	}
 
 	//the polynomial index in x and y is the index of the point that is not smaller than x or y
 	//	we use <algorithm> lower_bound which gives the iterator to the first element that does not compare less.
@@ -219,25 +229,20 @@ size_t BiCubicInterpolation<T>::find_polynomial_in_range(T x, T y) const {
 }
 
 template<typename T>
-T BiCubicInterpolation<T>::operator() (T argument1, T argument2) const {
-	//
-	//first try the last polynomial if it is in range
-	if ( _interpolatingPolynomials[_xLastAccess*_numPolynomsY + _yLastAccess].is_in_range(argument1,argument2)){
-		T minX=_interpolatingPolynomials[_xLastAccess*_numPolynomsY + _yLastAccess].get_min_x();
-		T minY=_interpolatingPolynomials[_xLastAccess*_numPolynomsY + _yLastAccess].get_min_y();
-		return _interpolatingPolynomials[_xLastAccess*_numPolynomsY + _yLastAccess](argument1-minX,argument2-minY);
-	}
-	//
-	//see if we are out of the data range in which case we return zero
-	if ( (argument1 >= _maxRangeX) or ( argument1 < _minRangeX) or (argument2 >= _maxRangeY) or ( argument2 < _minRangeY)) {
-		return 0.0;
-	}
-	//
-	//otherwise find the correct polynomial
-	size_t polyIndex = find_polynomial_in_range(argument1,argument2);
-	T minX=_interpolatingPolynomials[polyIndex].get_min_x();
-	T minY=_interpolatingPolynomials[polyIndex].get_min_y();
-	return _interpolatingPolynomials[polyIndex](argument1-minX,argument2-minY);
+T BiCubicInterpolation<T>::operator() (T x, T y) const {
+	T result;
+	this->evaluate(x,y,result);
+	return result;
+}
+
+template<typename T>
+void BiCubicInterpolation<T>::evaluate(T x, T y,T &dataInterpolation) const {
+	return _interpolatingPolynomials[find_polynomial_in_range(x,y)].evaluate(x,y,dataInterpolation);
+}
+
+template<typename T>
+void BiCubicInterpolation<T>::evaluate_derivative(T x, T y,T &gradX, T &gradY) const {
+	return _interpolatingPolynomials[find_polynomial_in_range(x,y)].evaluate_derivative(x,y,gradX,gradY);
 }
 
 template<typename T>
@@ -247,6 +252,27 @@ void BiCubicInterpolation<T>::data_range(T &xMin, T &xMax, T &yMin, T &yMax) con
 	yMin = _minRangeY;
 	yMax = _maxRangeY;
 }
+
+
+template<typename T>
+T BiCubicInterpolation<T>::min_range_x() const {
+	return _minRangeX;
+};
+
+template<typename T>
+T BiCubicInterpolation<T>::min_range_y() const {
+	return _minRangeY;
+};
+
+template<typename T>
+T BiCubicInterpolation<T>::max_range_x() const {
+	return _maxRangeX;
+};
+
+template<typename T>
+T BiCubicInterpolation<T>::max_range_y() const {
+	return _maxRangeY;
+};
 
 };/* namespace data_interpolation */
 };/* namespace gslpp */

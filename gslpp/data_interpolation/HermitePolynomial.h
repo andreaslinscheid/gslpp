@@ -66,6 +66,16 @@ public:
 	 * @param value The value of the second derivative of the polynomial at x.
 	 */
 	void evaluate_second_derivative(T x, T &value) const;
+
+	/**
+	 * @return The derivative of the data at range infinium.
+	 */
+	T derivative_at_range_min() const;
+
+	/**
+	 * @return The derivative of the data at range suppremum.
+	 */
+	T derivative_at_range_max() const;
 private:
 
 	/** Store the coefficients of the Hermite basis

@@ -120,5 +120,16 @@ T HermitePolynomial<T>::ddh11(T t) const {
 	return 6*t - 2;
 }
 
+
+template<typename T>
+T HermitePolynomial<T>::derivative_at_range_min() const {
+	return _coefficientdFAtZero;
+}
+
+template<typename T>
+T HermitePolynomial<T>::derivative_at_range_max() const {
+	return _coefficientdFAtOne;
+}
+
 }; /* namespace data_interpolation */
 }; /* namespace gslpp */

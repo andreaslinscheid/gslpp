@@ -83,6 +83,13 @@ public:
 	 * @return True If the object is correctly initialized.
 	 */
 	bool is_init() const;
+
+	/**
+	 * Compute the derivatives of the data at underlying initial grid points.
+	 *
+	 * @return Vector with the derivatives at the borders of the polynomials.
+	 */
+	std::vector<T> deriviatives_at_underlying_grid_points() const;
 protected:
 
 	/**	Set the internal mesh of x values. Also sets BaseRealFunctionOnInterval.set_range_of_definition .
