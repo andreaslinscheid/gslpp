@@ -37,22 +37,5 @@ void RunTest::run_test(){
 			(_allSuccess ? "successfull!" : "not sucessfull!" ) << "\n\n" <<std::endl;
 }
 
-template<>
-std::string RunTest::nameOfTypeTrait<double> () const {
-	return "double";
-}
-template<>
-std::string RunTest::nameOfTypeTrait<float> () const {
-	return "float";
-}
-template<>
-double RunTest::accuracyGoal<double> () const {
-	return 1e-12;
-}
-template<>
-float RunTest::accuracyGoal<float> () const {
-	return 1e-5;
-}
-
 };/* namespace data_interpolation */
 };/* namespace gslpp */

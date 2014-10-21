@@ -8,17 +8,17 @@
 #ifndef GSLPP_DATA_INTERPOLATION_TEST_H_
 #define GSLPP_DATA_INTERPOLATION_TEST_H_
 
+#include "gslpp/test_common/TestCommon.h"
 #include <cmath>
 #include <vector>
 
 namespace gslpp{
 namespace data_interpolation{
 
-class RunTest {
+class RunTest : public gslpp::test_common::TestCommon {
 public:
 	void run_test();
 private:
-	bool _allSuccess;
 
 	template<typename T>
 	void test_CubicPolynomial();
@@ -39,12 +39,6 @@ private:
 	void get_polynomial_test_data(std::vector<T> & xValues,
 			std::vector<T> & polynomialData,
 			std::vector<T> & derivativePolynomialData ) const;
-
-	template<typename T>
-	std::string nameOfTypeTrait() const;
-
-	template<typename T>
-	T accuracyGoal() const;
 };
 
 }; /* namespace data_interpolation */
