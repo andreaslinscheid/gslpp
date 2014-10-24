@@ -9,20 +9,31 @@
 #define GSLPP_AUXILLARY_FUNCTIONTRAITS_H_
 
 #include <tuple>
+#include <type_traits>
 
 namespace gslpp {
 namespace auxillary {
 
-}
-template<typename T>
-struct FunctionTraits{
-    static_assert(
-        std::integral_constant<T, false>::value,
-        "Second template parameter needs to be of function type.");
+template <class Functor>
+struct FunctionTraits : public FunctionTraits<decltype(&Functor::operator())>{
 };
 
-template<typename ResultType, typename ...Args>
-struct FunctionTraits<ResultType(Args...)>
+//specialize for pointer to member function types
+template<class Functor, typename ResultType, typename ...Args>
+struct FunctionTraits<ResultType(Functor::*)(Args...) const>
+{
+    static const size_t nargs = sizeof...(Args);
+
+    typedef ResultType result_type;
+
+    template <size_t i>
+    struct arg{
+        typedef typename std::tuple_element<i, std::tuple<Args...> >::type type;
+    };
+};
+//specialize for pointer to member function types
+template<class Functor, typename ResultType, typename ...Args>
+struct FunctionTraits<ResultType(Functor::*)(Args...)>
 {
     static const size_t nargs = sizeof...(Args);
 

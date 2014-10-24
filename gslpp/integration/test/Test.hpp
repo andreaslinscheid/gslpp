@@ -7,6 +7,7 @@
 
 #include "gslpp/integration/test/Test.h"
 #include "gslpp/integration/Integrator.h"
+#include "gslpp/auxillary/NumAccuracyControl.h"
 #include <cmath>
 #include <iostream>
 
@@ -19,8 +20,9 @@ void RunTest::test_adaptive_integration(){
 
 	//Integrate f(x)=x from 0 to 2 with the known result 2 for comparison
 	auto identityFunctor = []( T x ){ return x; };
-	gslpp::integration::Integrator<T,T, decltype( identityFunctor ) > x_integrator;
-	T integral,errEstim;
+	gslpp::integration::Integrator< decltype( identityFunctor ) > x_integrator;
+	T integral;
+	gslpp::auxillary::NumAccuracyControl<T> errEstim;
 	x_integrator.integrate(0.0,2.0,identityFunctor,integral,errEstim);
 	if ( std::fabs(2.0 - integral) > this->accuracyGoal<T>() ){
 		std::cout << "\n\tTest of the adaptive integration for type "<< this->nameOfTypeTrait<T>() <<" failed.\n" <<
@@ -31,7 +33,7 @@ void RunTest::test_adaptive_integration(){
 
 	//Integrate the sine function with known result for comparison
 	auto sineFunctor = []( T x ){ return std::sin(x); };
-	gslpp::integration::Integrator<T,T, decltype( sineFunctor ) > sinus_integrator;
+	gslpp::integration::Integrator< decltype( sineFunctor ) > sinus_integrator;
 	sinus_integrator.integrate(0.0,M_PI/2.0,sineFunctor,integral,errEstim);
 	if ( std::fabs(1.0 - integral) > this->accuracyGoal<T>() ){
 		std::cout << "\n\tTest of the adaptive integration for type "<< this->nameOfTypeTrait<T>() <<" failed.\n" <<

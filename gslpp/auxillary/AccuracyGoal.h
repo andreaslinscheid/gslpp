@@ -24,12 +24,12 @@ struct AccuracyGoal<std::complex<T> > {
 
 template<>
 struct AccuracyGoal<double> {
-	constexpr static const double value = 1e-12;
+	constexpr static double value = 1e-12;
 };
 
 template<>
 struct AccuracyGoal<float> {
-	constexpr static const float value = 1e-5f;
+	constexpr static float value = 1e-5f;
 };
 } /* namespace auxillary */
 } /* namespace gslpp */

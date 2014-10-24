@@ -9,7 +9,8 @@
 #define GSLPP_INTEGRATION_INTEGRATOR_H_
 
 #include "gslpp/auxillary/NumAccuracyControl.h"
-#include <map>
+#include "gslpp/auxillary/FunctionTraits.h"
+#include <vector>
 
 namespace gslpp {
 namespace integration {
@@ -19,9 +20,15 @@ namespace integration {
  *
  *
  */
-template<typename TArg, class TRes, class Function>
+template<class Function, size_t indexT=0>
 class Integrator {
 public:
+
+	/**	we deduce the result type from the Function */
+	typedef typename gslpp::auxillary::FunctionTraits<Function>::result_type TRes;
+
+	/**	we deduce the argument i type from the Function */
+	typedef typename gslpp::auxillary::FunctionTraits<Function>::template arg<indexT>::type TArg;
 
 	/**
 	 * Compute the adaptive integral using the template Function.
@@ -41,29 +48,20 @@ private:
 	typedef struct {
 		TArg lborder;
 		TArg uborder;
-		TArg kronradPoints[17];
-		TRes functionVals[17];
-	} IntervalG7K17;
+		TRes integralVal;
+		TRes errEstim;
+	} Interval;
 
-	TRes const _kronradWeights[] = {0.022935322010529,0.063092092629979,0.104790010322250,
-			0.140653259715525,0.169004726639267,0.190350578064785,0.204432940075298,0.209482141084728,
-			0.204432940075298,0.190350578064785,0.169004726639267,0.140653259715525,0.104790010322250,
-			0.063092092629979,0.022935322010529};
+	typedef TArg Kronradpoints[15];
+	typedef TArg Gausspoints[7];
 
-	TRes const _gaussWeights[] = {0.129484966168870,0.279705391489277,0.381830050505119,0.417959183673469,
-			0.381830050505119,0.279705391489277,0.129484966168870};
+	Kronradpoints& get_kronrad_points(TArg lborder,TArg uborder) const;
+
+	Kronradpoints& get_kronrad_weights() const;
+	Gausspoints& get_gauss_weights() const;
 
 
 	std::vector<TArg> _evaluationBuffer;
-
-	void set_interval(TArg lborder, TArg uborder, Function const &f, IntervalG7K17 &intervalToBeSet);
-
-	void Gauss7Kronrad15(TArg lborder, TArg uborder, Function &f, TRes &integral, TRes &errEstim);
-
-	void sub_div(IntervalG7K17 &intervalOrig,
-			Function &f,
-			IntervalG7K17 &intervalNewLower,
-			IntervalG7K17 &intervalNewUpper );
 };
 
 } /* namespace integration */
