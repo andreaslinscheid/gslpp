@@ -41,6 +41,23 @@ void RunTest::test_adaptive_integration(){
 				" Instead we have obtained "<< integral <<" from the adaptive integration routine." <<std::endl;
 		_allSuccess = false;
 	}
+
+	//Integrate a sharply peaked Lorenzian function
+	const T gamma = 0.0001;
+	const T x0 = 1.0;
+	auto lorenzianFunctor = [&]( T x ){
+		return gamma/static_cast<T>(M_PI) / ( static_cast<T>( (x - x0)*(x - x0) ) + gamma*gamma);
+	};
+	Integrator< decltype( lorenzianFunctor ) > lorenz_integrator;
+
+	lorenz_integrator.integrate(-1000.0,1001.0,lorenzianFunctor,integral,errEstim);
+	if ( std::fabs(1.0 - integral) > this->accuracyGoal<T>() ){
+		std::cout << "\n\tTest of the adaptive integration for type "<< this->nameOfTypeTrait<T>() <<" failed.\n" <<
+				" Integral of Lorenz function not sufficiently close to 1.0. Difference is: " << 1.0 - integral << "\n"<<
+				" Instead we have obtained "<< integral <<" from the adaptive integration routine." <<std::endl;
+		_allSuccess = false;
+	}
+
 }
 
 } /* namespace integration */

@@ -55,10 +55,10 @@ private:
 	typedef TArg Kronradpoints[15];
 	typedef TArg Gausspoints[7];
 
-	Kronradpoints& get_kronrad_points(TArg lborder,TArg uborder) const;
+	void get_kronrad_points(TArg lborder,TArg uborder, TArg (&kronradPoints)[15] ) const;
 
-	Kronradpoints& get_kronrad_weights() const;
-	Gausspoints& get_gauss_weights() const;
+	void get_kronrad_weights(TRes (&kronradWeights)[15] ) const;
+	void get_gauss_weights(TRes (&gaussWeights)[7] ) const;
 
 
 	std::vector<TArg> _evaluationBuffer;
