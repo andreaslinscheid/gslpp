@@ -18,7 +18,7 @@ template <class Functor>
 struct FunctionTraits : public FunctionTraits<decltype(&Functor::operator())>{
 };
 
-//specialize for pointer to member function types
+//specialize for pointer to const member function types
 template<class Functor, typename ResultType, typename ...Args>
 struct FunctionTraits<ResultType(Functor::*)(Args...) const>
 {
@@ -31,6 +31,7 @@ struct FunctionTraits<ResultType(Functor::*)(Args...) const>
         typedef typename std::tuple_element<i, std::tuple<Args...> >::type type;
     };
 };
+
 //specialize for pointer to member function types
 template<class Functor, typename ResultType, typename ...Args>
 struct FunctionTraits<ResultType(Functor::*)(Args...)>

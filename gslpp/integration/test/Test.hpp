@@ -50,7 +50,7 @@ void RunTest::test_adaptive_integration(){
 	};
 	Integrator< decltype( lorenzianFunctor ) > lorenz_integrator;
 
-	lorenz_integrator.integrate(-1000.0,1001.0,lorenzianFunctor,integral,errEstim);
+	lorenz_integrator.integrate(-1000000.0,1000001.0,lorenzianFunctor,integral,errEstim);
 	if ( std::fabs(1.0 - integral) > this->accuracyGoal<T>() ){
 		std::cout << "\n\tTest of the adaptive integration for type "<< this->nameOfTypeTrait<T>() <<" failed.\n" <<
 				" Integral of Lorenz function not sufficiently close to 1.0. Difference is: " << 1.0 - integral << "\n"<<

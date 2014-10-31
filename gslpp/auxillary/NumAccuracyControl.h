@@ -8,6 +8,8 @@
 #ifndef GSLPP_AUXILLARY_NUMACCURACYCONTROL_H_
 #define GSLPP_AUXILLARY_NUMACCURACYCONTROL_H_
 
+#include <cstddef>
+
 namespace gslpp {
 namespace auxillary {
 
@@ -40,13 +42,17 @@ public:
 	 * @return true if globalErrEstimate is smaller or equal the global error threshold.
 	 */
 	bool global_sufficient(T globalErrEstimate, T functionValue) const;
+
+	bool sub_divisions_below_max(size_t numSubdivisons) const;
 private:
 
-	T localRelativeErrorThreshold;
-	T localAbsErrorThreshold;
+	size_t _maxNumberOfSubdivisions;
 
-	T globalRelativeErrorThreshold;
-	T globalAbsErrorThreshold;
+	T _localRelativeErrorThreshold;
+	T _localAbsErrorThreshold;
+
+	T _globalRelativeErrorThreshold;
+	T _globalAbsErrorThreshold;
 
 };
 

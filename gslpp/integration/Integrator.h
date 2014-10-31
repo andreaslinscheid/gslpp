@@ -10,7 +10,9 @@
 
 #include "gslpp/auxillary/NumAccuracyControl.h"
 #include "gslpp/auxillary/FunctionTraits.h"
+#include "gslpp/auxillary/has_evaluate_several_points.h"
 #include <vector>
+#include <type_traits>
 
 namespace gslpp {
 namespace integration {
@@ -50,6 +52,7 @@ private:
 		TArg uborder;
 		TRes integralVal;
 		TRes errEstim;
+		size_t subdiv;
 	} Interval;
 
 	typedef TArg Kronradpoints[15];
@@ -60,8 +63,9 @@ private:
 	void get_kronrad_weights(TRes (&kronradWeights)[15] ) const;
 	void get_gauss_weights(TRes (&gaussWeights)[7] ) const;
 
-
-	std::vector<TArg> _evaluationBuffer;
+	void evaluate_several_points(std::vector<TArg> const &points,
+			Function const &f,
+			std::vector<TRes> &setOfEvaluatedPoints) const;
 };
 
 } /* namespace integration */

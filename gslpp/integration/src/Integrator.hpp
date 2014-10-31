@@ -7,6 +7,7 @@
 
 #include "gslpp/integration/Integrator.h"
 #include <cmath>
+#include <type_traits>
 
 namespace gslpp {
 namespace integration {
@@ -15,8 +16,14 @@ template<class Function,size_t indexT>
 void Integrator<Function,indexT>::integrate(TArg lborder, TArg uborder, Function const &f,
 		TRes &integral, auxillary::NumAccuracyControl<TRes> &integralAcc) {
 	TRes errEstim;
-	std::vector<std::pair<TArg,TArg> > intervalsToBeDone( 1, std::make_pair(lborder,uborder) );
-	std::vector<std::pair<TArg,TArg> > intervalsToBeDoneNextLoop;
+	Integrator::Interval interval;
+	interval.errEstim = 0;
+	interval.integralVal = 0;
+	interval.lborder = lborder;
+	interval.uborder = uborder;
+	interval.subdiv = 0;
+	typename std::vector<Integrator::Interval> intervalsToBeDone( 1, interval );
+	typename std::vector<Integrator::Interval> intervalsToBeDoneNextLoop;
 	bool converged;
 	std::vector<TArg> points;
 	integral = 0;
@@ -29,19 +36,18 @@ void Integrator<Function,indexT>::integrate(TArg lborder, TArg uborder, Function
 		size_t numIntervalsThisLoop = intervalsToBeDone.size();
 
 		//collect all points that need to be evaluated
-		typename std::vector< std::pair<Integrator<Function,indexT>::TArg, Integrator<Function,indexT>::TArg> >::iterator it;
+		typename std::vector<Integrator::Interval>::iterator it;
 		for (  it = intervalsToBeDone.begin() ;it != intervalsToBeDone.end(); ++it){
 			TArg newKronradPoints[15];
-			this->get_kronrad_points(it->first,it->second,newKronradPoints);
+			this->get_kronrad_points(it->lborder,it->uborder,newKronradPoints);
 			for ( size_t i = 0 ; i < 15; ++i)
 				points.push_back(newKronradPoints[i]);
 		}
 
 		//evaluate all points
 		std::vector<TRes> valAtPoints;
-		for (typename std::vector<Integrator<Function,indexT>::TArg>::iterator it = points.begin(); it != points.end(); ++it){
-			valAtPoints.push_back( f( *it) );
-		}
+		valAtPoints.reserve(points.size());
+		this->evaluate_several_points(points,f,valAtPoints);
 		points.clear();
 
 		//evaluate the integral and set up intervals for the next loop
@@ -57,27 +63,27 @@ void Integrator<Function,indexT>::integrate(TArg lborder, TArg uborder, Function
 				localContribution += valAtPoints[i*15+point]*kronradWeights[point];
 			for ( size_t point = 0 ; point < 7; ++point)
 				integralGauss += valAtPoints[15*i+2*point+1]*gaussWeights[point];
-			localContribution *= 0.5 * std::fabs( intervalsToBeDone[i].second - intervalsToBeDone[i].first);
-			integralGauss *= 0.5 * std::fabs( intervalsToBeDone[i].second - intervalsToBeDone[i].first);
+			localContribution *= 0.5 * std::fabs( intervalsToBeDone[i].uborder - intervalsToBeDone[i].lborder);
+			integralGauss *= 0.5 * std::fabs( intervalsToBeDone[i].uborder - intervalsToBeDone[i].lborder);
 
 			TRes localErrEstim = std::pow(200.0*std::fabs(integralGauss-localContribution),1.5);
 
 			bool thisIntervalConverged = integralAcc.locally_sufficient(localErrEstim,localContribution);
 			converged = converged and thisIntervalConverged;
 
-			if ( not thisIntervalConverged ){
-				TArg middle = 0.5 * ( intervalsToBeDone[i].first + intervalsToBeDone[i].second );
-				intervalsToBeDoneNextLoop.push_back(std::make_pair(intervalsToBeDone[i].first,middle));
-				intervalsToBeDoneNextLoop.push_back(std::make_pair(middle,intervalsToBeDone[i].second));
+			if ( (not thisIntervalConverged) and integralAcc.sub_divisions_below_max(intervalsToBeDone[i].subdiv) ){
+				TArg middle = 0.5 * ( intervalsToBeDone[i].uborder + intervalsToBeDone[i].lborder );
+				intervalsToBeDone[i].subdiv += 1;
+				Integrator::Interval intervalLower = intervalsToBeDone[i];
+				Integrator::Interval intervalUpper = intervalsToBeDone[i];
+				intervalLower.uborder = middle;
+				intervalUpper.lborder = middle;
+				intervalsToBeDoneNextLoop.push_back(intervalLower);
+				intervalsToBeDoneNextLoop.push_back(intervalUpper);
 			} else {
 				errEstim += localErrEstim;
 				integral += localContribution;
-				Integrator::Interval interval;
-				interval.errEstim = localErrEstim;
-				interval.integralVal =localContribution;
-				interval.lborder = intervalsToBeDone[i].first;
-				interval.uborder = intervalsToBeDone[i].second;
-				intervals.push_back(interval);
+				intervals.push_back(intervalsToBeDone[i]);
 			}
 
 		}
@@ -94,11 +100,15 @@ void Integrator<Function,indexT>::integrate(TArg lborder, TArg uborder, Function
 				//subdivide the interval with the largest error estimate
 				TRes maxErr = 0;
 				typename std::vector<Integrator::Interval>::iterator it;
-				typename std::vector<Integrator::Interval>::iterator itMax;
+				typename std::vector<Integrator::Interval>::iterator itMax = intervals.end();
 				for ( it = intervals.begin(); it != intervals.end(); ++it){
-					if ( maxErr < it->errEstim )
+					if ( maxErr < it->errEstim)
 						itMax = it;
 				}
+
+				//the interval that should be subdivided is not dividable any more
+				if ( integralAcc.sub_divisions_below_max(itMax->subdiv) )
+					return;
 
 				//remove the intervals contribution as the two subintervals will be re-added
 				//in the next loop
@@ -106,8 +116,13 @@ void Integrator<Function,indexT>::integrate(TArg lborder, TArg uborder, Function
 				errEstim -= itMax->errEstim;
 
 				TArg middle = 0.5 * ( itMax->lborder + itMax->uborder );
-				intervalsToBeDoneNextLoop.push_back(std::make_pair(itMax->lborder ,middle));
-				intervalsToBeDoneNextLoop.push_back(std::make_pair(middle,itMax->uborder));
+				itMax->subdiv += 1;
+				Integrator::Interval intervalLower = *itMax;
+				Integrator::Interval intervalUpper = *itMax;
+				intervalLower.uborder = middle;
+				intervalUpper.lborder = middle;
+				intervalsToBeDoneNextLoop.push_back(intervalLower);
+				intervalsToBeDoneNextLoop.push_back(intervalUpper);
 			}
 		}
 		intervalsToBeDone.clear();
@@ -148,6 +163,56 @@ void Integrator<Function,indexT>::get_gauss_weights(TRes (&gaussWeights)[7] ) co
 
 	for ( size_t i = 0 ; i < 7; ++i)
 		gaussWeights[i] = tmp[i];
+};
+
+//We delegate to two implementations, one is simply evaluating the function using the operator()
+//	and one is calling the function evaluate_several_points(points,setOfEvaluatedPoints) if the
+//	object implements such a function (i.e. the Mode template parameter is true).
+namespace delegate{
+
+template<class Function,bool Mode>
+struct evaluate_several_points_impl {};
+
+//instantanated if Function _does_not_ implement the
+//	evaluate_several_points(std::vector<TArg>,std::vector<TRes>) function
+template<class Function>
+struct evaluate_several_points_impl<Function,false> {
+public:
+	template<typename TRes,typename TArg>
+	static void call (std::vector<TArg> const &points,
+			Function const &f,
+			std::vector<TRes> &setOfEvaluatedPoints){
+		setOfEvaluatedPoints.clear();
+		for (typename std::vector<TArg>::const_iterator it = points.begin(); it != points.end(); ++it){
+			setOfEvaluatedPoints.push_back( f( *it) );
+		}
+	};
+};
+
+//instantanated if Function _does_ implement the
+//	evaluate_several_points(std::vector<TArg>,std::vector<TRes>) function
+template<class Function>
+struct evaluate_several_points_impl<Function,true> {
+public:
+	template<typename TRes,typename TArg>
+	static void call (std::vector<TArg> const &points,
+			Function const &f,
+			std::vector<TRes> &setOfEvaluatedPoints){
+		f.evaluate_several_points(points,setOfEvaluatedPoints);
+	};
+};
+
+};
+
+template<class Function,size_t indexT>
+void Integrator<Function,indexT>::evaluate_several_points(std::vector<TArg> const &points,
+		Function const &f,
+		std::vector<TRes> &setOfEvaluatedPoints) const{
+
+	//delegate to struct evaluate_several_points_impl above. See above documentation.
+	delegate::evaluate_several_points_impl<Function,
+		gslpp::auxillary::has_evaluate_several_points<Function, TRes(TArg) >::value
+		>::template call<TRes,TArg>(points,f,setOfEvaluatedPoints);
 };
 
 } /* namespace integration */

@@ -12,22 +12,28 @@ namespace gslpp {
 namespace auxillary {
 
 template<typename T>
-NumAccuracyControl<T>::NumAccuracyControl() : localRelativeErrorThreshold( AccuracyGoal<T>::value ),
-												localAbsErrorThreshold(  AccuracyGoal<T>::value ),
-												globalRelativeErrorThreshold(  AccuracyGoal<T>::value ),
-												globalAbsErrorThreshold(  AccuracyGoal<T>::value ) {
+NumAccuracyControl<T>::NumAccuracyControl() : _maxNumberOfSubdivisions(1000),
+												_localRelativeErrorThreshold( AccuracyGoal<T>::value ),
+												_localAbsErrorThreshold(  AccuracyGoal<T>::value ),
+												_globalRelativeErrorThreshold(  AccuracyGoal<T>::value ),
+												_globalAbsErrorThreshold(  AccuracyGoal<T>::value ) {
 }
 
 template<typename T>
 bool NumAccuracyControl<T>::locally_sufficient(T localErrEstimate, T functionValue) const {
-	return (localErrEstimate <= localRelativeErrorThreshold * functionValue)
-			and ( localErrEstimate <= localAbsErrorThreshold);
+	return (localErrEstimate <= _localRelativeErrorThreshold * functionValue)
+			and ( localErrEstimate <= _localAbsErrorThreshold);
 }
 
 template<typename T>
 bool NumAccuracyControl<T>::global_sufficient(T globalErrEstimate, T functionValue) const {
-	return (globalErrEstimate <= globalRelativeErrorThreshold * functionValue)
-			and ( globalErrEstimate <= globalAbsErrorThreshold);
+	return (globalErrEstimate <= _globalRelativeErrorThreshold * functionValue)
+			and ( globalErrEstimate <= _globalAbsErrorThreshold);
+}
+
+template<typename T>
+bool NumAccuracyControl<T>::sub_divisions_below_max(size_t numOfSubdivisions) const {
+	return _maxNumberOfSubdivisions >= numOfSubdivisions;
 }
 
 } /* namespace auxillary */
