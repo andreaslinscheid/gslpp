@@ -15,7 +15,10 @@ namespace gslpp {
 namespace auxillary {
 
 template<typename T>
-struct AccuracyGoal {};
+struct AccuracyGoal {
+	static_assert(std::integral_constant<T,false>::value,
+			"No specialization for this type T");
+};
 
 template<typename T>
 struct AccuracyGoal<std::complex<T> > {

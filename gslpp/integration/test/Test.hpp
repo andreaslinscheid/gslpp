@@ -14,6 +14,44 @@
 namespace gslpp {
 namespace integration {
 
+
+//a minimal type that return a pair of constant numbers
+template<typename T>
+class  MinimalObject {
+public:
+	typedef T value_type;
+
+	MinimalObject() : _val(std::make_pair(0.0,0.0))
+	{ };
+
+	MinimalObject(value_type first, value_type second) : _val(std::make_pair(first,second))
+	{ };
+
+	MinimalObject & operator* (value_type alpha) {
+		_val.first = _val.first*alpha;
+		_val.second = _val.second*alpha;
+		return *this;
+	};
+
+	MinimalObject & operator+ (MinimalObject &rhs) {
+		_val.first = _val.first + rhs._val.first;
+		_val.second = _val.second + rhs._val.second;
+		return *this;
+	};
+
+	std::pair<T,T> _val;
+};
+//a minimal function that returns MinimalObject with x+1 in the first argument and x-1 in the second
+template<typename T>
+class MinimalFunction {
+public:
+	MinimalObject<T> operator() (T x) const {
+		MinimalObject<T> val(x+static_cast<T>(1.0),x-static_cast<T>(1.0));
+		return val;
+	};
+};
+
+
 template<typename T>
 void RunTest::test_adaptive_integration(){
 	std::cout << "\n\tTest of the adaptive integration for type "<< this->nameOfTypeTrait<T>() <<":" <<std::endl;
@@ -58,6 +96,12 @@ void RunTest::test_adaptive_integration(){
 		_allSuccess = false;
 	}
 
+//	//Integrate a generic minimal object that wraps around a std::pair
+//	gslpp::integration::Integrator<MinimalFunction<T> > pair_integrator;
+//	MinimalFunction<T> pairWrap;
+//	MinimalObject<T> integralPair;
+//	gslpp::auxillary::NumAccuracyControl<MinimalObject<T> > errEstimPair;
+//	pair_integrator.integrate(-1.0,1.0,pairWrap,integralPair,errEstimPair);
 }
 
 } /* namespace integration */
