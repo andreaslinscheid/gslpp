@@ -12,11 +12,12 @@ namespace gslpp {
 namespace auxillary {
 
 template<typename T>
-NumAccuracyControl<T>::NumAccuracyControl() : _maxNumberOfSubdivisions(1000),
-												_localRelativeErrorThreshold( AccuracyGoal<T>::value ),
-												_localAbsErrorThreshold(  AccuracyGoal<T>::value ),
-												_globalRelativeErrorThreshold(  AccuracyGoal<T>::value ),
-												_globalAbsErrorThreshold(  AccuracyGoal<T>::value ) {
+NumAccuracyControl<T>::NumAccuracyControl(){
+	 _maxNumberOfSubdivisions =1000;
+	_localRelativeErrorThreshold = ( AccuracyGoal<T>::value );
+	_localAbsErrorThreshold =(  AccuracyGoal<T>::value );
+	_globalRelativeErrorThreshold =(   AccuracyGoal<T>::value );
+	_globalAbsErrorThreshold =(  AccuracyGoal<T>::value );
 }
 
 template<typename T>

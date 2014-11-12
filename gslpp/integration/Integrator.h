@@ -10,7 +10,6 @@
 
 #include "gslpp/auxillary/NumAccuracyControl.h"
 #include "gslpp/auxillary/FunctionTraits.h"
-#include "gslpp/auxillary/has_function_signature.h"
 #include <vector>
 #include <type_traits>
 
@@ -64,6 +63,8 @@ private:
 	};
 	typedef typename result_type_trait<>::value_type weight_type;
 
+//	typedef decltype( &(Integrator<Function,indexT>::gauss_kronrad_err_est) ) err_estim_formula;
+
 	typedef struct {
 		argument_type lborder;
 		argument_type uborder;
@@ -74,13 +75,17 @@ private:
 
 	void add_interval_points(argument_type lborder,argument_type uborder,std::vector<argument_type> &points) const;
 
-	void evaluate_integral_formula_for_interval(size_t indexOfIntervalInData,
+	void evaluate_integral_formula_for_interval(
+			Function const& f,
+			size_t indexOfIntervalInData,
 			weight_type intervalLength,
 			std::vector<result_type> const& evaluatedPoints,
 			result_type &integralOfInterval,
 			result_type &errorEstiamteOfIntegral) const;
 
 	weight_type distance_argument_types(Function const& f,argument_type v1, argument_type v2) const;
+
+	weight_type gauss_kronrad_err_est(weight_type dummy, weight_type estimGauss, weight_type estimKronrad) const;
 
 	void get_kronrad_points(argument_type lborder,argument_type uborder, argument_type (&kronradPoints)[15] ) const;
 
@@ -90,6 +95,8 @@ private:
 	void evaluate_several_points(std::vector<argument_type> const &points,
 			Function const &f,
 			std::vector<result_type> &setOfEvaluatedPoints) const;
+
+	result_type set_to_zero() const;
 };
 
 } /* namespace integration */

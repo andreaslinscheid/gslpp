@@ -44,6 +44,14 @@ public:
 	bool global_sufficient(T globalErrEstimate, T functionValue) const;
 
 	bool sub_divisions_below_max(size_t numSubdivisons) const;
+
+	bool first_lower_than_second(T first, T second) const;
+
+	void set_local_error_threshold(T thrRel, T thrAbs);
+
+	void set_max_subdiv(size_t n);
+
+	void set_global_error_threshold(T thrRel, T thrAbs);
 private:
 
 	size_t _maxNumberOfSubdivisions;

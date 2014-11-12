@@ -14,39 +14,21 @@
 namespace gslpp {
 namespace auxillary {
 
-template <class Functor>
-struct FunctionTraits : public FunctionTraits<decltype(&Functor::operator())>{
-};
+template <typename T, bool TIsClass>
+struct FunctionTraits_impl;
 
-//specialize for pointer to const member function types
-template<class Functor, typename ResultType, typename ...Args>
-struct FunctionTraits<ResultType(Functor::*)(Args...) const>
-{
-    static const size_t nargs = sizeof...(Args);
-
-    typedef ResultType result_type;
-
-    template <size_t i>
-    struct arg{
-        typedef typename std::tuple_element<i, std::tuple<Args...> >::type type;
-    };
-};
-
-//specialize for pointer to member function types
-template<class Functor, typename ResultType, typename ...Args>
-struct FunctionTraits<ResultType(Functor::*)(Args...)>
-{
-    static const size_t nargs = sizeof...(Args);
-
-    typedef ResultType result_type;
-
-    template <size_t i>
-    struct arg{
-        typedef typename std::tuple_element<i, std::tuple<Args...> >::type type;
-    };
-};
+/**
+ * 	Determines the type traits of the function like type T which can also be a functor.
+ *
+ * 	Defines the result type as FunctionTraits<T>::result_type, the number of arguments
+ * 	as FunctionTraits<T>::nargs and the type of the arguement number i as
+ * 	FunctionTraits<T>::template arg<i>::type.
+ */
+template <typename T>
+struct FunctionTraits : public FunctionTraits_impl<T,std::is_class<T>::value> { };
 
 } /* namespace auxillary */
 } /* namespace gslpp */
 
+#include "gslpp/auxillary/src/FunctionTraits.hpp"
 #endif /* GSLPP_AUXILLARY_FUNCTIONTRAITS_H_ */

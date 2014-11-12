@@ -19,7 +19,7 @@ void RunTest::run_test(){
 	std::cout << "\n\nStarting tests of the integration namespace" <<std::endl;
 
 	test_adaptive_integration<float>();
-	test_adaptive_integration<double>();
+//	test_adaptive_integration<double>();
 };
 
 } /* namespace integration */

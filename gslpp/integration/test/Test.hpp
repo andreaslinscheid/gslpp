@@ -20,26 +20,46 @@ template<typename T>
 class  MinimalObject {
 public:
 	typedef T value_type;
+	typedef typename std::vector<T>::iterator iterator;
 
-	MinimalObject() : _val(std::make_pair(0.0,0.0))
+	iterator begin() const {
+		return _val.begin();
+	};
+	iterator end() const {
+		return _val.end();
+	};
+
+	MinimalObject() : _val(2,0.0)
 	{ };
 
-	MinimalObject(value_type first, value_type second) : _val(std::make_pair(first,second))
-	{ };
+	MinimalObject(value_type first, value_type second)
+	{
+		_val.push_back(first);
+		_val.push_back(second);
+	};
 
 	MinimalObject & operator* (value_type alpha) {
-		_val.first = _val.first*alpha;
-		_val.second = _val.second*alpha;
+		_val[0] = _val[0]*alpha;
+		_val[1] = _val[1]*alpha;
 		return *this;
 	};
 
 	MinimalObject & operator+ (MinimalObject &rhs) {
-		_val.first = _val.first + rhs._val.first;
-		_val.second = _val.second + rhs._val.second;
+		_val[0] = _val[0] + rhs.first();
+		_val[1] = _val[1] + rhs.second();
 		return *this;
 	};
 
-	std::pair<T,T> _val;
+	value_type& first() const {
+		return &_val[0];
+	};
+
+	value_type& second() const {
+		return &_val[1];
+	};
+
+private:
+	std::vector<T> _val;
 };
 //a minimal function that returns MinimalObject with x+1 in the first argument and x-1 in the second
 template<typename T>
@@ -96,10 +116,10 @@ void RunTest::test_adaptive_integration(){
 		_allSuccess = false;
 	}
 
-//	//Integrate a generic minimal object that wraps around a std::pair
-//	gslpp::integration::Integrator<MinimalFunction<T> > pair_integrator;
-//	MinimalFunction<T> pairWrap;
-//	MinimalObject<T> integralPair;
+	//Integrate a generic minimal object that wraps around a std::vector with two elements
+	gslpp::integration::Integrator<MinimalFunction<T> > pair_integrator;
+	MinimalFunction<T> pairWrap;
+	MinimalObject<T> integralPair;
 //	gslpp::auxillary::NumAccuracyControl<MinimalObject<T> > errEstimPair;
 //	pair_integrator.integrate(-1.0,1.0,pairWrap,integralPair,errEstimPair);
 }
