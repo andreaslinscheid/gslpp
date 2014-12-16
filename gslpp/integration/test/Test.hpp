@@ -10,6 +10,7 @@
 #include "gslpp/auxillary/NumAccuracyControl.h"
 #include <cmath>
 #include <iostream>
+#include <array>
 
 namespace gslpp {
 namespace integration {
@@ -17,56 +18,53 @@ namespace integration {
 
 //a minimal type that return a pair of constant numbers
 template<typename T>
-class  MinimalObject {
+class  MinimalObject : public std::array<T,2> {
 public:
-	typedef T value_type;
-	typedef typename std::vector<T>::iterator iterator;
 
-	iterator begin() const {
-		return _val.begin();
-	};
-	iterator end() const {
-		return _val.end();
-	};
-
-	MinimalObject() : _val(2,0.0)
+	MinimalObject() : std::array<T,2>{{0.0,0.0}}
 	{ };
 
-	MinimalObject(value_type first, value_type second)
+	MinimalObject(T first, T second) : std::array<T,2>{{first,second}}
 	{
-		_val.push_back(first);
-		_val.push_back(second);
 	};
-
-	MinimalObject & operator* (value_type alpha) {
-		_val[0] = _val[0]*alpha;
-		_val[1] = _val[1]*alpha;
-		return *this;
-	};
-
-	MinimalObject & operator+ (MinimalObject &rhs) {
-		_val[0] = _val[0] + rhs.first();
-		_val[1] = _val[1] + rhs.second();
-		return *this;
-	};
-
-	value_type& first() const {
-		return &_val[0];
-	};
-
-	value_type& second() const {
-		return &_val[1];
-	};
-
-private:
-	std::vector<T> _val;
+//
+//	MinimalObject<T> operator* (T alpha) const {
+//		MinimalObject<T> tmp;
+//		tmp[0] = (*this)[0]*alpha;
+//		tmp[1] = (*this)[1]*alpha;
+//		return tmp;
+//	};
+//
+//	MinimalObject<T> operator+ (MinimalObject<T> &rhs) const {
+//		MinimalObject<T> tmp;
+//		tmp[0] = (*this)[0] + rhs[0];
+//		tmp[1] = (*this)[1] + rhs[1];
+//		return tmp;
+//	};
 };
+
+template<typename T>
+MinimalObject<T> operator+ (MinimalObject<T> const& a, MinimalObject<T> const& b) {
+	MinimalObject<T> tmp;
+	tmp[0] = a[0] + b[0];
+	tmp[1] = a[1] + b[1];
+	return tmp;
+}
+template<typename T>
+MinimalObject<T> operator* (MinimalObject<T> const& a, T const& alpha) {
+	MinimalObject<T> tmp;
+	tmp[0] = a[0]*alpha;
+	tmp[1] = a[1]*alpha;
+	return tmp;
+}
+
 //a minimal function that returns MinimalObject with x+1 in the first argument and x-1 in the second
 template<typename T>
 class MinimalFunction {
 public:
 	MinimalObject<T> operator() (T x) const {
-		MinimalObject<T> val(x+static_cast<T>(1.0),x-static_cast<T>(1.0));
+		MinimalObject<T> val(x + static_cast<T>(1.0),
+							 x - static_cast<T>(1.0));
 		return val;
 	};
 };
@@ -116,12 +114,33 @@ void RunTest::test_adaptive_integration(){
 		_allSuccess = false;
 	}
 
-	//Integrate a generic minimal object that wraps around a std::vector with two elements
-	gslpp::integration::Integrator<MinimalFunction<T> > pair_integrator;
-	MinimalFunction<T> pairWrap;
+	//
+	//	Integrate a generic minimal object that wraps around a std::vector with two elements
+	//
+	//we define the error control
+	gslpp::auxillary::NumAccuracyControl<MinimalObject<T> > errEstimPair;
+	errEstimPair.set_max_subdiv(100);
+	MinimalObject<T> zeroErr(0.0,0.0);
+	errEstimPair.set_local_error_threshold(zeroErr,zeroErr);
+	MinimalObject<T> relErrThr(auxillary::AccuracyGoal<T>::value,auxillary::AccuracyGoal<T>::value);
+	MinimalObject<T> absErrThr(auxillary::AccuracyGoal<T>::value,auxillary::AccuracyGoal<T>::value);
+	errEstimPair.set_global_error_threshold(relErrThr,absErrThr);
+
+	//Let us declare the function with x+1 in the first and x-1 in the second argument
+	MinimalFunction<T> doubleFunction;
+
+	//to store the integral
 	MinimalObject<T> integralPair;
-//	gslpp::auxillary::NumAccuracyControl<MinimalObject<T> > errEstimPair;
-//	pair_integrator.integrate(-1.0,1.0,pairWrap,integralPair,errEstimPair);
+
+	//compute the integral
+	gslpp::integration::Integrator< MinimalFunction<T> > pair_integrator;
+	pair_integrator.integrate(0.0,1.0,doubleFunction,integralPair,errEstimPair);
+	if ( std::fabs(1.0 - integral) > this->accuracyGoal<T>() ){
+		std::cout << "\n\tTest of the adaptive integration for type "<< this->nameOfTypeTrait<T>() <<" failed.\n" <<
+				" Integral of Lorenz function not sufficiently close to 1.0. Difference is: " << 1.0 - integral << "\n"<<
+				" Instead we have obtained "<< integral <<" from the adaptive integration routine." <<std::endl;
+		_allSuccess = false;
+	}
 }
 
 } /* namespace integration */

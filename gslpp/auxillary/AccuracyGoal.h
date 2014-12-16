@@ -7,6 +7,9 @@
 
 #ifndef GSLPP_AUXILLARY_ACCURACYGOAL_H_
 #define GSLPP_AUXILLARY_ACCURACYGOAL_H_
+/** \file AccuracyGoal.h
+    \brief Define a type trait with numbers for the default accuracy that is required to that type.
+*/
 
 #include <complex>
 #include <type_traits>
@@ -14,6 +17,9 @@
 namespace gslpp {
 namespace auxillary {
 
+/**
+ * 	Specify the number for the default accuracy of the specialized type.
+ */
 template<typename T>
 struct AccuracyGoal {
 	static_assert(std::integral_constant<T,false>::value,

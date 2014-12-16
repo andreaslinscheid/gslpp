@@ -6,8 +6,8 @@
  */
 
 #include "gslpp/integration/Integrator.h"
-#include "gslpp/auxillary/apply_function_on_elements.h"
 #include "gslpp/auxillary/has_function_signature.h"
+#include "gslpp/auxillary/has_iterator.h"
 #include <cmath>
 #include <type_traits>
 #include <complex>
@@ -16,19 +16,23 @@ namespace gslpp {
 namespace integration {
 
 template<class Function,size_t indexT>
-void Integrator<Function,indexT>::integrate(argument_type lborder, argument_type uborder, Function const &f,
-		result_type &integral, auxillary::NumAccuracyControl<result_type> &integralAcc) {
+void Integrator<Function,indexT>::integrate(
+		argument_type lborder, argument_type uborder,
+		Function const &f,
+		result_type &integral,
+		auxillary::NumAccuracyControl<result_type> &integralAcc) const {
 
 	//set integral and error estimates to zero
-	result_type errEstim = this->set_to_zero();
-	integral = this->set_to_zero();
+	this->set_to_zero(integral);
+	_zeroOfResultType = integral;
+	result_type errEstim(_zeroOfResultType);
 
 	bool converged;
 
 	//set up the first initial interval
 	Integrator::Interval interval;
-	interval.errEstim = this->set_to_zero();
-	interval.integralVal = this->set_to_zero();
+	interval.errEstim = _zeroOfResultType;
+	interval.integralVal = _zeroOfResultType;
 	interval.lborder = lborder;
 	interval.uborder = uborder;
 	interval.subdiv = 0;
@@ -57,17 +61,19 @@ void Integrator<Function,indexT>::integrate(argument_type lborder, argument_type
 		//evaluate the integral and set up intervals for the next loop
 		for ( size_t i = 0 ; i < intervalsToBeDone.size(); i++) {
 
-			result_type localContribution,localErrEstim;
+			result_type localContribution(_zeroOfResultType);
+			result_type localErrEstim(_zeroOfResultType);
 			weight_type intervalLength = this->distance_argument_types(
 					f,intervalsToBeDone[i].uborder,intervalsToBeDone[i].lborder);
-			this->evaluate_integral_formula_for_interval(f,i,intervalLength,valAtPoints,localContribution,localErrEstim);
+			this->evaluate_integral_formula_for_interval(i,intervalLength,valAtPoints,localContribution,localErrEstim);
 
 			bool thisIntervalConverged = integralAcc.locally_sufficient(localErrEstim,localContribution);
 
 			//split all intervals in two for the next loop that are not locally converged sufficiently.
 			if ( (not thisIntervalConverged) and
 				 (integralAcc.sub_divisions_below_max(intervalsToBeDone[i].subdiv)) ){
-				argument_type middle =  ( intervalsToBeDone[i].uborder + intervalsToBeDone[i].lborder ) * 0.5;
+				argument_type middle =  ( intervalsToBeDone[i].uborder + intervalsToBeDone[i].lborder )
+						* weight_type(0.5);
 				intervalsToBeDone[i].subdiv += 1;
 				Integrator::Interval intervalLower = intervalsToBeDone[i];
 				Integrator::Interval intervalUpper = intervalsToBeDone[i];
@@ -129,7 +135,49 @@ void Integrator<Function,indexT>::integrate(argument_type lborder, argument_type
 		intervalsToBeDone.swap(intervalsToBeDoneNextLoop);
 
 	}while ( not converged );
+}
 
+template<class Function,size_t indexT>
+void Integrator<Function,indexT>::non_adaptive_integral(
+		std::vector<argument_type> segmentPoints,
+		Function const &f,
+		result_type &integral,
+		result_type &errorEstimation) const {
+
+	//set integral and error estimates to zero
+	this->set_to_zero(integral);
+	_zeroOfResultType = integral;
+	errorEstimation = _zeroOfResultType;
+
+	//numerical integral of zero measure
+	if ( segmentPoints.size() < 2 )
+		return;
+
+	//collect all points that need to be evaluated
+	std::vector<argument_type> points;
+	for ( size_t i = 0 ; i < segmentPoints.size() - 1; ++i) {
+		this->add_interval_points(segmentPoints[i],segmentPoints[i+1],points);
+	}
+
+	//evaluate all points
+	std::vector<result_type> valueFAtPoints;
+	valueFAtPoints.reserve(points.size());
+	this->evaluate_several_points(points,f,valueFAtPoints);
+
+	//compute the integral
+	for ( size_t i = 0 ; i < segmentPoints.size() - 1; ++i) {
+
+		weight_type intervalLength =
+				this->distance_argument_types(f,segmentPoints[i],segmentPoints[i+1]);
+
+		result_type localContribution(_zeroOfResultType);
+		result_type localErrEstim(_zeroOfResultType);
+
+		this->evaluate_integral_formula_for_interval(i,intervalLength,valueFAtPoints,localContribution,localErrEstim);
+
+		integral = integral + localContribution;
+		errorEstimation = errorEstimation + localErrEstim;
+	}
 }
 
 template<class Function,size_t indexT>
@@ -146,7 +194,7 @@ void Integrator<Function,indexT>::get_kronrad_points(argument_type lborder,argum
 };
 
 template<class Function,size_t indexT>
-void Integrator<Function,indexT>::get_kronrad_weights(result_type (&kronradWeights)[15] ) const {
+void Integrator<Function,indexT>::get_kronrad_weights(weight_type (&kronradWeights)[15] ) const {
 	weight_type tmp[15] = {0.022935322010529,0.063092092629979,0.104790010322250,
 			0.140653259715525,0.169004726639267,0.190350578064785,0.204432940075298,0.209482141084728,
 			0.204432940075298,0.190350578064785,0.169004726639267,0.140653259715525,0.104790010322250,
@@ -157,7 +205,7 @@ void Integrator<Function,indexT>::get_kronrad_weights(result_type (&kronradWeigh
 };
 
 template<class Function,size_t indexT>
-void Integrator<Function,indexT>::get_gauss_weights(result_type (&gaussWeights)[7] ) const {
+void Integrator<Function,indexT>::get_gauss_weights(weight_type (&gaussWeights)[7] ) const {
 	weight_type tmp[7] = {0.129484966168870,0.279705391489277,0.381830050505119,0.417959183673469,
 			0.381830050505119,0.279705391489277,0.129484966168870};
 
@@ -170,15 +218,13 @@ void Integrator<Function,indexT>::get_gauss_weights(result_type (&gaussWeights)[
 //	object implements such a function (i.e. the Mode template parameter is true).
 namespace delegate{
 
-template<class Function,bool Mode>
+template<class Function,typename result_type,typename argument_type,bool Mode>
 struct evaluate_several_points_impl {};
 
 //instantanated if Function _does_not_ implement the
 //	evaluate_several_points(std::vector<argument_type>,std::vector<result_type>) function
-template<class Function>
-struct evaluate_several_points_impl<Function,false> {
-public:
-	template<typename result_type,typename argument_type>
+template<class Function,typename result_type,typename argument_type>
+struct evaluate_several_points_impl<Function,result_type,argument_type,false> {
 	static void call (std::vector<argument_type> const &points,
 			Function const &f,
 			std::vector<result_type> &setOfEvaluatedPoints){
@@ -191,10 +237,8 @@ public:
 
 //instantanated if Function _does_ implement the
 //	evaluate_several_points(std::vector<argument_type>,std::vector<result_type>) function
-template<class Function>
-struct evaluate_several_points_impl<Function,true> {
-public:
-	template<typename result_type,typename argument_type>
+template<class Function,typename result_type,typename argument_type>
+struct evaluate_several_points_impl<Function,result_type,argument_type,true> {
 	static void call (std::vector<argument_type> const &points,
 			Function const &f,
 			std::vector<result_type> &setOfEvaluatedPoints){
@@ -202,7 +246,7 @@ public:
 	};
 };
 
-};
+}; /* namespace delegate */
 
 template<class Function,size_t indexT>
 void Integrator<Function,indexT>::evaluate_several_points(std::vector<argument_type> const &points,
@@ -210,9 +254,9 @@ void Integrator<Function,indexT>::evaluate_several_points(std::vector<argument_t
 		std::vector<result_type> &setOfEvaluatedPoints) const{
 
 	//delegate to struct evaluate_several_points_impl above. See above documentation.
-	delegate::evaluate_several_points_impl<Function,
+	delegate::evaluate_several_points_impl<Function,result_type,argument_type,
 		gslpp::auxillary::has_evaluate_several_points<Function, result_type(argument_type) >::value
-		>::template call<result_type,argument_type>(points,f,setOfEvaluatedPoints);
+		>::call(points,f,setOfEvaluatedPoints);
 };
 
 template<class Function,size_t indexT>
@@ -226,14 +270,17 @@ void Integrator<Function,indexT>::add_interval_points(argument_type lborder,
 
 template<class Function,size_t indexT>
 void Integrator<Function,indexT>::evaluate_integral_formula_for_interval(
-		Function const& f,
 		size_t indexOfIntervalInData,
 		weight_type intervalLength,
 		std::vector<result_type> const& evaluatedPoints,
 		result_type &integralOfInterval,
 		result_type &errorEstiamteOfIntegral) const{
 
-	integralOfInterval = this->set_to_zero();
+	// we assume integralOfInterval is set to zero
+#ifdef DEBUG_BUILD
+	//TODO Check that integralOfInterval is zero
+#endif
+
 	weight_type kronradWeights[15];
 	this->get_kronrad_weights(kronradWeights);
 	for ( size_t point = 0 ; point < 15; ++point)
@@ -241,7 +288,8 @@ void Integrator<Function,indexT>::evaluate_integral_formula_for_interval(
 			evaluatedPoints[indexOfIntervalInData*15+point]*kronradWeights[point];
 	integralOfInterval = integralOfInterval * (intervalLength * static_cast<weight_type>(0.5));
 
-	result_type integralGauss = this->set_to_zero();
+	result_type integralGauss = integralOfInterval;
+	this->set_to_zero(integralGauss);
 	weight_type gaussWeights[7];
 	this->get_gauss_weights(gaussWeights);
 	for ( size_t point = 0 ; point < 7; ++point)
@@ -249,98 +297,131 @@ void Integrator<Function,indexT>::evaluate_integral_formula_for_interval(
 			evaluatedPoints[15*indexOfIntervalInData+2*point+1]*gaussWeights[point];
 	integralGauss = integralGauss * (intervalLength * static_cast<weight_type>(0.5));
 
-	errorEstiamteOfIntegral = this->set_to_zero();
-	auxillary::apply_function_on_elements<
-			decltype(&Integrator<Function,indexT>::gauss_kronrad_err_est)
-				>(integralGauss,errorEstiamteOfIntegral,integralOfInterval);
+	errorEstiamteOfIntegral = this->evaluate_error( integralGauss, integralOfInterval);
 }
 
 //We delegate to two implementations, one is simply evaluating the function using the operator()
 //	and one is calling the function evaluate_several_points(points,setOfEvaluatedPoints) if the
 //	object implements such a function (i.e. the Mode template parameter is true).
 namespace delegate{
-template <typename Function,size_t indexT, typename weightT, bool implmentsDistance>
+template <class FuncT,class argumentT,class weightT, bool implmentsDistance>
 struct distance_argument_types_impl{ };
 
-template <typename Function,size_t indexT, typename weightT>
-struct distance_argument_types_impl<Function,indexT,weightT,false> {
+template <class FuncT,class argumentT,class weightT>
+struct distance_argument_types_impl<FuncT,argumentT,weightT,false> {
 	static weightT call(
-			Function const& f,
-			typename Integrator<Function,indexT>::argument_type v1,
-			typename Integrator<Function,indexT>::argument_type v2) {
+			FuncT const& f,argumentT v1,argumentT v2) {
 		return std::fabs(v1 - v2);
 	}
 };
 
-template <typename Function,size_t indexT, typename weightT>
-struct distance_argument_types_impl<Function,indexT,weightT,true> {
+template <class FuncT,class argumentT,class weightT>
+struct distance_argument_types_impl<FuncT,argumentT,weightT,true> {
 	static weightT call(
-			Function const& f,
-			typename Integrator<Function,indexT>::argument_type v1,
-			typename Integrator<Function,indexT>::argument_type v2) {
+			FuncT const& f,argumentT v1,argumentT v2) {
 		return f.distance(v1,v2);
 	}
 };
-}
+}/* namespace delegate */
 
 template<class Function,size_t indexT>
 typename Integrator<Function,indexT>::weight_type
 		Integrator<Function,indexT>::distance_argument_types(Function const& f,argument_type v1, argument_type v2) const{
 	return delegate::distance_argument_types_impl<
-			Function,
-			indexT,
-			weight_type,
-			gslpp::auxillary::has_distance<Function,weight_type(argument_type,argument_type)>::value
+				Function,argument_type,weight_type,
+				auxillary::has_distance<Function,weight_type(argument_type,argument_type)>::value
 			>::call(f,v1,v2);
 }
 
+template<class Function,size_t indexT>
+typename Integrator<Function,indexT>::weight_type
+Integrator<Function,indexT>::gauss_kronrad_err_est(weight_type estimGauss, weight_type estimKronrad) const {
+	return std::pow(200.0*std::fabs(estimGauss-estimKronrad),1.5);
+}
+
 namespace delegate{
-template <typename result_type, typename weight_type>
-struct estimate_error_impl{
-	static result_type call(result_type &estimateMethod1, result_type &estimateMethod2){
-		gslpp::auxillary::apply_function_on_elements<gauss_kronrad_error_estimation>(estimateMethod1+estimateMethod2*(-1.0));
-		};
-private:
-	weight_type gauss_kronrad_error_estimation(weight_type diffGaussKronrad);
+template <typename T,  bool THasIterator = auxillary::has_iterator<T>::value>
+struct assign_zero { };
+
+template <typename T>
+struct assign_zero<T,false> {
+	//any sensible floating point type will convert
+	//this integer 0 to its exact zero representation
+	static void call (T & toBeSetZero) {toBeSetZero = 0;};
+};
+template <typename T>
+struct assign_zero<T,true> {
+	static void call (T & toBeSetZero) {
+		for ( auto &&element : toBeSetZero) {
+			//any sensible floating point type will convert
+			//this integer 0 to its exact zero representation
+			element = 0;
+		}
+	};
+};
+}/* namespace delegate */
+
+template<class Function,size_t indexT>
+void Integrator<Function,indexT>::set_to_zero(result_type & toBeSetZero) const{
+	delegate::assign_zero<result_type>::call(toBeSetZero);
 };
 
-template <typename result_type>
-struct estimate_error_impl<result_type,result_type> {
-	static std::complex<result_type> call(std::complex<result_type> &estimateMethod1, std::complex<result_type> &estimateMethod2){
-		return std::complex<result_type>(
-				std::pow(200.0*std::fabs(estimateMethod1.real()-estimateMethod2.real()),1.5),
-				std::pow(200.0*std::fabs(estimateMethod1.imag()-estimateMethod2.imag()),1.5));
+namespace delegate{
+template <class method,typename T,  bool THasIterator>
+struct estimate_error_impl{ };
+
+template <class method,typename T>
+struct estimate_error_impl<method,T,false>{
+	static T call(method const& f,T const&estimateMethod1, T const &estimateMethod2){
+		return f(estimateMethod1,estimateMethod2);
+	};
+};
+
+template <class method,typename T>
+struct estimate_error_impl<method,std::complex<T>,false> {
+	static std::complex<T> call(method const& f,std::complex<T> const&estimateMethod1, std::complex<T> const&estimateMethod2){
+		return std::complex<T>(
+				f(estimateMethod1.real(),estimateMethod2.real()),
+				f(estimateMethod1.imag(),estimateMethod2.imag()));
 	};
 };
 
 //specialization for std::complex is to perform the error estimation for real and imaginary parts independently
-template <typename result_type>
-struct estimate_error_impl<std::complex<result_type>,result_type> {
-	static std::complex<result_type> call(std::complex<result_type> &estim1, std::complex<result_type> &estim2){
-		return std::complex<result_type>(
-				estimate_error_impl<result_type,result_type>::call(estim1.real(),estim2.real()),
-				estimate_error_impl<result_type,result_type>::call(estim1.imag(),estim2.imag())
-				);
+template <class method,typename T>
+struct estimate_error_impl<method,T,true> {
+	static T call(method const& f,T const& estim1, T const& estim2){
+		T result = estim1;
+		typename T::const_iterator it1,it2;
+		typename T::iterator itr;
+		it1 = estim1.begin();
+		it2 = estim2.begin();
+		itr = result.begin();
+		for ( ; it1 != estim1.end(); ++it1){
+			 ++it2;
+			 ++itr;
+			 *itr = f(*it1,*it2);
+		}
+		return result;
 	};
 };
 };/* namespace delegate*/
-
-template<class Function,size_t indexT>
-typename Integrator<Function,indexT>::weight_type
-Integrator<Function,indexT>::gauss_kronrad_err_est(weight_type dummy, weight_type estimGauss, weight_type estimKronrad) const {
-	return std::pow(200.0*std::fabs(estimGauss-estimKronrad),1.5);
-}
-
-
 template<class Function,size_t indexT>
 typename Integrator<Function,indexT>::result_type
-Integrator<Function,indexT>::set_to_zero() const{
-	result_type zero = result_type()*0.0;
-//	auto zeroFct = [] (weight_type dummy){
-//		return static_cast<weight_type>(0.0);
-//	};
-//	auxillary::apply_function_on_elements< decltype( zeroFct ) >( zero, weight_type() );
-	return zero;
+Integrator<Function,indexT>::evaluate_error(result_type const & estimate1, result_type const & estimate2) const{
+	return delegate::estimate_error_impl<ErrorEstimationFunctor,result_type,
+			auxillary::has_iterator<result_type>::value>::call(_errorEstimationFunctor,estimate1,estimate2);
+}
+
+template<class Function,size_t indexT>
+template<typename T>
+struct Integrator<Function,indexT>::result_type_trait<T,false>{
+		typedef T value_type;
+};
+
+template<class Function,size_t indexT>
+template<typename T>
+struct Integrator<Function,indexT>::result_type_trait<T,true>{
+	typedef typename T::value_type value_type;
 };
 
 } /* namespace integration */

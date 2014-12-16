@@ -31,16 +31,19 @@ struct FunctionTraits_impl<T,true> : public FunctionTraits_impl<decltype(&T::ope
 
 template<class Functor, typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType(Functor::*)(Args...) const,true> {
+	typedef ResultType(Functor::*signature_type)(Args...) const;
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
 template<class Functor, typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType const&(Functor::*)(Args...) const,true> {
+	typedef ResultType const&(Functor::*signature_type)(Args...) const;
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
 template<class Functor, typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType& (Functor::*)(Args...),true> {
+	typedef ResultType& (Functor::*signature_type)(Args...);
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
@@ -48,32 +51,38 @@ struct FunctionTraits_impl<ResultType& (Functor::*)(Args...),true> {
 //The following specialization determine information about function pointers
 template<typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType(*)(Args...),false> {
+	typedef ResultType (*signature_type)(Args...);
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
 template<typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType& (*)(Args...),false> {
+	typedef ResultType& (*signature_type)(Args...);
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
 template<typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType* (*)(Args...),false> {
+	typedef ResultType* (*signature_type)(Args...);
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
 //The following specialization determine information about member function pointers
 template<class T,typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType(T::*)(Args...),false> {
+	typedef ResultType (T::*signature_type)(Args...);
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
 template<class T,typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType& (T::*)(Args...),false> {
+	typedef ResultType& (T::*signature_type)(Args...);
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
 template<class T,typename ResultType, typename ...Args>
 struct FunctionTraits_impl<ResultType* (T::*)(Args...),false> {
+	typedef ResultType* (T::*signature_type)(Args...);
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
