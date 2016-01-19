@@ -48,8 +48,8 @@ public:
 		std::complex<T> localAbsErrorThreshold = (  AccuracyGoal<T>::value );
 		std::complex<T> globalRelativeErrorThreshold =(   AccuracyGoal<T>::value );
 		std::complex<T> globalAbsErrorThreshold = (  AccuracyGoal<T>::value );
-		static_cast<NumAccuracyControl<T>*>(this)->set_local_error_threshold(localRelativeErrorThreshold,localAbsErrorThreshold);
-		static_cast<NumAccuracyControl<T>*>(this)->set_global_error_threshold(globalRelativeErrorThreshold,globalAbsErrorThreshold);
+		static_cast<NumAccuracyControl<std::complex<T> >*>(this)->set_local_error_threshold(localRelativeErrorThreshold,localAbsErrorThreshold);
+		static_cast<NumAccuracyControl<std::complex<T> >*>(this)->set_global_error_threshold(globalRelativeErrorThreshold,globalAbsErrorThreshold);
 	}
 
 	bool first_lower_than_second_impl(std::complex<T> first, std::complex<T> second) const {
