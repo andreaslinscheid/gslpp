@@ -16,32 +16,39 @@
 namespace gslpp{
 namespace auxillary{
 
+template<typename T, bool T_is_class>
+struct has_iterator_impl;
+
 /**
  * A Class that checks if the typename T knows a type iterator.
  *
  * Thus, gslpp::auxillary::has_iterator<T>::value is true if T::iterator exists
  * or false if it does not.
  */
-template <typename T, bool isClass = std::is_class<T>::value>
-class has_iterator{
-public:
+template <typename T>
+struct has_iterator : public has_iterator_impl<T,std::is_class<T>::value>
+{
+};
+
+template <typename T>
+struct has_iterator_impl<T,false>
+{
     static const bool value = false;
 };
 
 template <typename T>
-class has_iterator<T,true>{
+class has_iterator_impl<T,true>{
 private:
 
-	struct Fallback { typedef int iterator;};
-	struct Derived : T, Fallback {};
+	struct Fallback { int iterator;};
+	struct Derived : public T, public Fallback {};
 
-	template<typename C, C>
-	struct ChT;
+	template <typename U, U> struct ChT;
 
 	//The following will work only, if T does not define the iterator type, otherwise
 	//	this will result in an ambiguity and the second version of check will be chosen
     template <typename U>
-    static constexpr std::false_type check( decltype(U::iterator) *);
+    static constexpr std::false_type check( ChT<int Fallback::*,&U::iterator> *);
 
     template <typename U>
     static constexpr std::true_type check(...);

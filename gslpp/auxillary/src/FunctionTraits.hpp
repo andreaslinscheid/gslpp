@@ -47,6 +47,11 @@ struct FunctionTraits_impl<ResultType& (Functor::*)(Args...),true> {
 	STRUCT_BODY_FUNCTION_TRAITS;
 };
 
+template<class Functor, typename ResultType, typename ...Args>
+struct FunctionTraits_impl<ResultType(Functor::*)(Args...),true> {
+	typedef ResultType(Functor::*signature_type)(Args...);
+	STRUCT_BODY_FUNCTION_TRAITS;
+};
 
 //The following specialization determine information about function pointers
 template<typename ResultType, typename ...Args>
