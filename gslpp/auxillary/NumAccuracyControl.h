@@ -84,6 +84,20 @@ public:
 	bool first_lower_than_second(T const& first, T const& second) const;
 
 	/**
+	 * Performs an internal comparison of first and second.
+	 *
+	 * For simple types without an iterator, this calls the operator<,
+	 * while for types T with an iterator this compares all elements and returns
+	 * true if all elements of first are lower or equal than the corresponding element of second.
+	 * For dynamic types T, first and second must be of the same size.
+	 *
+	 * @param first
+	 * @param second
+	 * @return True if the first is determined to be lower or equal than the second.
+	 */
+	bool first_leq_than_second(T const& first, T const& second) const;
+
+	/**
 	 * Set the local error threshold to the values given.
 	 *
 	 * @param thrRel

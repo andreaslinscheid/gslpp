@@ -15,6 +15,64 @@ namespace auxillary {
 template<class derived,typename T, bool THasIterator>
 class NumAccuracyControl_impl { };
 
+namespace detail{
+
+//We delegade the comparision of lower and equality to this templates.
+//	While complex does not have a strict ordering in the mathematical sense
+//	these functions are intended for component-wise convergence comparision.
+template<typename T>
+struct cmp_lower{
+
+	static bool cmp(T a, T b) {
+		return (a < b);
+	}
+};
+
+template<typename T>
+struct cmp_lower<std::complex<T> >{
+
+	static bool cmp(std::complex<T> a, std::complex<T> b) {
+		return cmp_lower<T>::cmp(a.real(),b.real())
+				and cmp_lower<T>::cmp(a.imag(),b.imag());
+	}
+};
+
+template<typename T>
+struct cmp_leq{
+
+	static bool cmp(T a, T b) {
+		return (a < b) or ( (not (a < b)) and (not (b < a)));
+	}
+};
+
+template<typename T>
+struct cmp_leq<std::complex<T> >{
+
+	static bool cmp(std::complex<T> a, std::complex<T> b) {
+		return cmp_leq<T>(a.real(),b.real())
+				and cmp_leq<T>(a.imag(),b.imag());
+	}
+};
+
+template<typename T>
+struct cmp_leq_abs{
+
+	static bool cmp(T a, T b) {
+		return cmp_leq<T>::cmp(a < T(0) ? -a : a,b < T(0) ? -b : b);
+	}
+};
+
+template<typename T>
+struct cmp_leq_abs<std::complex<T> >{
+
+	static bool cmp(std::complex<T> a, std::complex<T> b) {
+		return cmp_leq_abs<T>::cmp(a.real(),b.real())
+				and cmp_leq_abs<T>::cmp(a.imag(),b.imag());
+	}
+};
+
+}; /* namespace details */
+
 template<typename T>
 class NumAccuracyControl_impl< NumAccuracyControl<T>, T,false> {
 public:
@@ -27,8 +85,16 @@ public:
 		static_cast<NumAccuracyControl<T>*>(this)->set_global_error_threshold(globalRelativeErrorThreshold,globalAbsErrorThreshold);
 	}
 
+	bool abs_first_leq_than_second_impl(T first, T second) const {
+		return detail::cmp_leq_abs<T>::cmp(first,second);
+	}
+
 	bool first_lower_than_second_impl(T first, T second) const {
-		return first < second;
+		return detail::cmp_lower<T>::cmp(first,second);
+	}
+
+	bool first_leq_than_second_impl(T first, T second) const {
+		return detail::cmp_leq<T>::cmp(first,second);
 	}
 
 	bool not_all_zero(T const& val) const{
@@ -52,13 +118,20 @@ public:
 		static_cast<NumAccuracyControl<std::complex<T> >*>(this)->set_global_error_threshold(globalRelativeErrorThreshold,globalAbsErrorThreshold);
 	}
 
+	bool abs_first_leq_than_second_impl(std::complex<T> first, std::complex<T> second) const {
+		return detail::cmp_leq_abs<std::complex<T> >::cmp(first,second);
+	}
+
 	bool first_lower_than_second_impl(std::complex<T> first, std::complex<T> second) const {
-		return (first.real() < second.real())
-				and (first.imag() < second.imag());
+		return detail::cmp_lower<std::complex<T> >::cmp(first,second);
+	}
+
+	bool first_leq_than_second_impl(std::complex<T> first, std::complex<T> second) const {
+		return detail::cmp_leq<std::complex<T> >::cmp(first,second);
 	}
 
 	bool not_all_zero(std::complex<T> const& val) const{
-		return (val.real() != 0 ) and (val.imag() != 0 );
+		return (val != std::complex<T>(0));
 	}
 
 	std::complex<T> relative_value(std::complex<T> const& functionValue, std::complex<T> const& rel) const {
@@ -69,31 +142,38 @@ public:
 template<typename T>
 class NumAccuracyControl_impl<NumAccuracyControl<T>, T,true> {
 public:
-	NumAccuracyControl_impl() {
+
+	typedef typename std::iterator_traits<typename T::iterator>::value_type value_type;
+
+	bool abs_first_leq_than_second_impl(T first, T second) const {
+		T diff = first + second * value_type(-1.0);
+		return std::any_of(diff.begin(), diff.end(),
+				[] (value_type x) {return detail::cmp_leq_abs<value_type>::cmp(x,value_type(0)); });
+	}
+
+	bool first_leq_than_second_impl(T first, T second) const {
+		T diff = first + second * value_type(-1.0);
+		return std::any_of(diff.begin(), diff.end(),
+				[] (value_type x) {return detail::cmp_leq<value_type>::cmp(x,value_type(0)); });
 	}
 
 	bool first_lower_than_second_impl(T first, T second) const {
-		T diff = first + second *
-				static_cast< typename std::iterator_traits<typename T::iterator>::value_type >(-1.0);
-		return std::any_of(diff.begin(), diff.end(), [] (
-				typename std::iterator_traits<typename T::iterator>::value_type x) {return x > 0; });
+		T diff = first + second * value_type(-1.0);
+		return std::any_of(diff.begin(), diff.end(),
+				[] (value_type x) {return detail::cmp_lower<value_type>::cmp(x,value_type(0)); });
 	}
 
-
 	bool not_all_zero(T const& val) const{
-		return std::any_of(val.begin(), val.end(), [] (
-				typename std::iterator_traits<typename T::iterator>::value_type x) {return x != 0; });
+		return std::any_of(val.begin(), val.end(), [] (value_type x) {return x != value_type(0); });
 	}
 
 	T relative_value(T const& functionValue, T const& rel) const {
 		T result = rel;
-		typename T::iterator itr = result.begin();
+		auto itr = result.begin();
 		std::for_each(functionValue.begin(),functionValue.end(),
-				[&](typename std::iterator_traits<typename T::iterator>::value_type x)
-				{(*itr) *= x; ++itr;});
+				[&](value_type x){(*itr) *= x; ++itr;});
 		return result;
 	}
-private:
 };
 
 template<typename T>
@@ -106,14 +186,11 @@ bool NumAccuracyControl<T>::locally_sufficient(T const& localErrEstimate, T cons
 	bool relConv = true;
 	//equality is also OK
 	if ( _checkRelLocal )
-		relConv = this->first_lower_than_second_impl(localErrEstimate,
-					this->relative_value(functionValue,_localRelativeErrorThreshold))
-					and not this->first_lower_than_second_impl(
-								this->relative_value(functionValue,_localRelativeErrorThreshold),localErrEstimate);
+		relConv = (functionValue == T(0)) or this->abs_first_leq_than_second_impl(localErrEstimate,
+					this->relative_value(functionValue,_localRelativeErrorThreshold));
 	bool absConv = true;
 	if ( _checkAbsLocal )
-		absConv = this->first_lower_than_second_impl( localErrEstimate, _localAbsErrorThreshold)
-					and not this->first_lower_than_second_impl(_localAbsErrorThreshold, localErrEstimate );
+		absConv = this->abs_first_leq_than_second_impl( localErrEstimate, _localAbsErrorThreshold);
 	return relConv and absConv;
 }
 
@@ -121,11 +198,11 @@ template<typename T>
 bool NumAccuracyControl<T>::global_sufficient(T const& globalErrEstimate, T const& functionValue) const {
 	bool relConv = true;
 	if ( _checkRelGlobal )
-		relConv = this->first_lower_than_second_impl(globalErrEstimate,
+		relConv = (functionValue == T(0)) or this->abs_first_leq_than_second_impl(globalErrEstimate,
 					this->relative_value(functionValue,_globalRelativeErrorThreshold) );
 	bool absConv = true;
 	if ( _checkAbsGlobal )
-		absConv = this->first_lower_than_second_impl( globalErrEstimate, _globalAbsErrorThreshold);
+		absConv = this->abs_first_leq_than_second_impl( globalErrEstimate, _globalAbsErrorThreshold);
 	return relConv and absConv;
 }
 
