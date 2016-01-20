@@ -104,12 +104,16 @@ NumAccuracyControl<T>::NumAccuracyControl() : NumAccuracyControl_impl<NumAccurac
 template<typename T>
 bool NumAccuracyControl<T>::locally_sufficient(T const& localErrEstimate, T const& functionValue) const {
 	bool relConv = true;
+	//equality is also OK
 	if ( _checkRelLocal )
 		relConv = this->first_lower_than_second_impl(localErrEstimate,
-					this->relative_value(functionValue,_localRelativeErrorThreshold));
+					this->relative_value(functionValue,_localRelativeErrorThreshold))
+					and not this->first_lower_than_second_impl(
+								this->relative_value(functionValue,_localRelativeErrorThreshold),localErrEstimate);
 	bool absConv = true;
 	if ( _checkAbsLocal )
-		absConv = this->first_lower_than_second_impl( localErrEstimate, _localAbsErrorThreshold);
+		absConv = this->first_lower_than_second_impl( localErrEstimate, _localAbsErrorThreshold)
+					and not this->first_lower_than_second_impl(_localAbsErrorThreshold, localErrEstimate );
 	return relConv and absConv;
 }
 
