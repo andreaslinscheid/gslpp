@@ -38,7 +38,7 @@ struct AccuracyGoal<double> {
 
 template<>
 struct AccuracyGoal<float> {
-	constexpr static float value = 1e-5f;
+	constexpr static float value = 5e-5f;
 };
 } /* namespace auxillary */
 } /* namespace gslpp */

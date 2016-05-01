@@ -82,13 +82,21 @@ void Integrator<Function,indexT>::integrate(
 				intervalsToBeDoneNextLoop.push_back(intervalLower);
 				intervalsToBeDoneNextLoop.push_back(intervalUpper);
 			} else {
-				errEstim = errEstim + localErrEstim;
-				integral = integral + localContribution;
+				intervalsToBeDone[i].integralVal = localContribution;
+				intervalsToBeDone[i].errEstim = localErrEstim;
 				intervals.push_back(intervalsToBeDone[i]);
 			}
 
 			//change converged to false in some interval is not converged
 			converged = converged and thisIntervalConverged;
+		}
+
+		this->set_to_zero(integral);
+		this->set_to_zero(errEstim);
+		for ( auto it = intervals.begin(); it != intervals.end(); ++it )
+		{
+			errEstim = errEstim + it->errEstim;
+			integral = integral + it->integralVal;
 		}
 
 		//if local convergence has been achieved, check global convergence
@@ -109,15 +117,15 @@ void Integrator<Function,indexT>::integrate(
 				}
 
 				//the interval that should be subdivided is not dividable any more
-				if ( integralAcc.sub_divisions_below_max(itMax->subdiv) ){
+				if ( ! integralAcc.sub_divisions_below_max(itMax->subdiv) ){
 					//Warn
 					return;
 				}
 
 				//remove the intervals contribution as the two subintervals will be re-added
 				//in the next loop
-				integral = integral + itMax->integralVal*static_cast<weight_type>(-1.0);
-				errEstim = errEstim + itMax->errEstim*static_cast<weight_type>(-1.0);;
+				this->set_to_zero(itMax->errEstim);
+				this->set_to_zero(itMax->integralVal);
 
 				//add the two intervals to be done in the next loop
 				argument_type middle = ( itMax->lborder + itMax->uborder )*0.5;
@@ -135,6 +143,8 @@ void Integrator<Function,indexT>::integrate(
 		intervalsToBeDone.swap(intervalsToBeDoneNextLoop);
 
 	}while ( not converged );
+
+	integralAcc.set_abs_error_estimate(errEstim);
 }
 
 template<class Function,size_t indexT>
@@ -397,9 +407,9 @@ struct estimate_error_impl<method,T,true> {
 		it2 = estim2.begin();
 		itr = result.begin();
 		for ( ; it1 != estim1.end(); ++it1){
+			 *itr = f(*it1,*it2);
 			 ++it2;
 			 ++itr;
-			 *itr = f(*it1,*it2);
 		}
 		return result;
 	};

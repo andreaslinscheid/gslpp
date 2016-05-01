@@ -18,6 +18,7 @@ void RunTest::run_test(){
 	_allSuccess = true;
 	std::cout << "\n\nStarting tests of the integration namespace" <<std::endl;
 
+
 	test_adaptive_integration<float>();
 //	test_adaptive_integration<double>();
 };

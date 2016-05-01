@@ -27,20 +27,6 @@ public:
 	MinimalObject(T first, T second) : std::array<T,2>{{first,second}}
 	{
 	};
-//
-//	MinimalObject<T> operator* (T alpha) const {
-//		MinimalObject<T> tmp;
-//		tmp[0] = (*this)[0]*alpha;
-//		tmp[1] = (*this)[1]*alpha;
-//		return tmp;
-//	};
-//
-//	MinimalObject<T> operator+ (MinimalObject<T> &rhs) const {
-//		MinimalObject<T> tmp;
-//		tmp[0] = (*this)[0] + rhs[0];
-//		tmp[1] = (*this)[1] + rhs[1];
-//		return tmp;
-//	};
 };
 
 template<typename T>
@@ -106,7 +92,8 @@ void RunTest::test_adaptive_integration(){
 	};
 	Integrator< decltype( lorenzianFunctor ) > lorenz_integrator;
 
-	lorenz_integrator.integrate(-1000000.0,1000001.0,lorenzianFunctor,integral,errEstim);
+	errEstim.set_global_error_threshold(1e-10f,1e-10f);
+	lorenz_integrator.integrate(-10000.0,10000.0,lorenzianFunctor,integral,errEstim);
 	if ( std::fabs(1.0 - integral) > this->accuracyGoal<T>() ){
 		std::cout << "\n\tTest of the adaptive integration for type "<< this->nameOfTypeTrait<T>() <<" failed.\n" <<
 				" Integral of Lorenz function not sufficiently close to 1.0. Difference is: " << 1.0 - integral << "\n"<<

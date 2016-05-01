@@ -186,7 +186,7 @@ bool NumAccuracyControl<T>::locally_sufficient(T const& localErrEstimate, T cons
 	bool relConv = true;
 	//equality is also OK
 	if ( _checkRelLocal )
-		relConv = (functionValue == T(0)) or this->abs_first_leq_than_second_impl(localErrEstimate,
+		relConv = ( this->not_all_zero(functionValue) ) or this->abs_first_leq_than_second_impl(localErrEstimate,
 					this->relative_value(functionValue,_localRelativeErrorThreshold));
 	bool absConv = true;
 	if ( _checkAbsLocal )
@@ -198,7 +198,7 @@ template<typename T>
 bool NumAccuracyControl<T>::global_sufficient(T const& globalErrEstimate, T const& functionValue) const {
 	bool relConv = true;
 	if ( _checkRelGlobal )
-		relConv = (functionValue == T(0)) or this->abs_first_leq_than_second_impl(globalErrEstimate,
+		relConv = ( this->not_all_zero(functionValue) ) or this->abs_first_leq_than_second_impl(globalErrEstimate,
 					this->relative_value(functionValue,_globalRelativeErrorThreshold) );
 	bool absConv = true;
 	if ( _checkAbsGlobal )
@@ -240,6 +240,12 @@ void NumAccuracyControl<T>::set_global_error_threshold(T const& thrRel, T const&
 template<typename T>
 size_t NumAccuracyControl<T>::get_max_num_subdiv() const {
 	return _subdivisions;
+}
+
+template<typename T>
+void NumAccuracyControl<T>::set_abs_error_estimate(T const& estimedAbsErr)
+{
+	_errorEstimateAbs = estimedAbsErr;
 }
 
 template<typename T>

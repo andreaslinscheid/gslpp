@@ -1,0 +1,4 @@
+#Debugging compiler options
+DFLAGS		+= -DDEBUG_BUILD
+CXXFLAGS	+= -O0 -g -rdynamic
+LDFLAGS		+= -O0 -g -rdynamic
