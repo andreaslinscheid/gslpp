@@ -113,9 +113,8 @@ void BaseSpline<derived,T,polynom>::insert_grid(std::vector<T> const& strictlyIn
 
 template<class derived, typename T,class polynom>
 void BaseSpline<derived,T,polynom>::insert_polynom(polynom const& p) {
-	size_t polynomToBeInserted = _polynomials.size();
 #ifdef DEBUG_BUILD
-
+	size_t polynomToBeInserted = _polynomials.size();
 	//check if _gridValuesX is set
 	if ( _gridValuesX.empty() ){
 		gslpp::error_handling::Error("Input grid not set. Set before inserting polynomials",
