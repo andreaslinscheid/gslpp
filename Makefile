@@ -26,6 +26,7 @@ BUILDLIBLIST := $(shell find -L ./gslpp/ -type f | grep .*\.cpp | grep -vP "(?:\
 # What compiler to use for generating dependencies: 
 # it will be invoked with -MM -MP
 CXXDEP = g++
+CXX = g++
 
 # What include flags to pass to the compiler
 INCLUDES = -I./

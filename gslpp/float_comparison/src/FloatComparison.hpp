@@ -183,11 +183,12 @@ struct equal_up_to_significant_digits_decimal_above_threshold_impl{
 template<typename T>
 struct equal_up_to_significant_digits_decimal_above_threshold_impl<std::complex<T> > {
 	static bool equal_up_to_significant_digits_decimal_above_threshold_call(
-			std::complex<T> a, std::complex<T> b, int significantDigits,std::complex<T> threshold){
-		return equal_up_to_significant_digits_decimal_above_threshold_call(
-				a.real(),b.real(),significantDigits,threshold.real()) and
-				equal_up_to_significant_digits_decimal_above_threshold_call(
-				a.imag(),b.imag(),significantDigits,threshold.imag());
+			std::complex<T> a, std::complex<T> b, int significantDigits,std::complex<T> threshold)
+	{
+		equal_up_to_significant_digits_decimal_above_threshold_impl<T> obj;
+		bool res = obj.equal_up_to_significant_digits_decimal_above_threshold_call(a.real(),b.real(),significantDigits,threshold.real())
+				and obj.equal_up_to_significant_digits_decimal_above_threshold_call(a.imag(),b.imag(),significantDigits,threshold.imag());
+		return res;
 	};
 };
 

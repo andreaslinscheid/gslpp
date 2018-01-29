@@ -10,6 +10,7 @@
 #include <complex>
 #include <vector>
 #include <gslpp/auxillary/has_iterator.h>
+#include <array>
 
 namespace gslpp {
 namespace auxillary {
