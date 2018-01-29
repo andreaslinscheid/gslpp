@@ -1,0 +1,6 @@
+/**	\namespace gslpp::linear_algebra The namespace with some basic linear algebra methods.
+ *	\brief Generic implementation of basic linear algebra used in the library.
+ *	
+ *	To not have a code dependence on better linear algebra packages some brief reimplementation is done
+ *	which is used primarly for internal purposes.
+ */

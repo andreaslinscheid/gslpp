@@ -1,0 +1,5 @@
+#External libaries
+DFLAGS		+= -DNDEBUG 
+CXXFLAGS	+= -O3 -ffast-math -ftree-vectorizer-verbose=1 -fcx-fortran-rules -march=native
+LDFLAGS		+= -O3 -ffast-math -ftree-vectorizer-verbose=1 -fcx-fortran-rules -march=native
+ 

@@ -1,0 +1,26 @@
+#Common compiler flags
+#
+#	Define flags
+#
+DFLAGS		+= -DLIN_ALG_EXTERNAL
+#
+#	Linear algebra libraries
+#
+BLAS_LIBS	+= -lblas
+LAPACK_LIBS	+= -llapacke
+#
+#	assemble the list of libraries
+#
+LDLIBS          += -lgsl -lfftw3 $(LAPACK_LIBS) $(BLAS_LIBS) -lm
+#
+#	Flags for the linker
+#
+LDFLAGS		+= $(DFLAGS)
+#
+#	includes
+#
+INCLUDES	+= $(INCLUDEFLAGS)
+#
+#	Flgas for the compiler
+#
+CXXFLAGS	+= -Wall $(DFLAGS) -std=c++11

@@ -1,0 +1,19 @@
+# object/lib/dependency files
+*.[oad]
+#pictures
+*.gif
+#data files
+*.dat
+#zipped files
+*.gz
+#documents
+*.pdf
+# binaries
+*.x
+#vim swap files
+*.swp
+*~
+#hidden files except gitignore itself and htaccess
+.*
+!.gitignore
+!.htaccess
